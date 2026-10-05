@@ -1,10 +1,11 @@
 # Bar do Mocochovisk
 
 Aplicativo Flutter de controle financeiro, com interface Cupertino em português
-do Brasil e backend Supabase. **Entrega atual: etapa 1 de 7.** A implementação
-para aqui para validação, conforme solicitado.
+do Brasil e backend Supabase. **Etapa atual: 2 de 7** — o app implementa a base
+de autenticação/navegação da etapa 1, e o schema Supabase da etapa 2 está no
+repositório. A migration ainda precisa ser aplicada ao projeto Supabase.
 
-## O que funciona nesta etapa
+## O que está implementado
 
 - Cadastro com confirmação por e-mail, login, recuperação e definição de nova
   senha via Supabase Auth; sessão persistente e saída do dispositivo atual.
@@ -16,10 +17,13 @@ para aqui para validação, conforme solicitado.
 - Configuração por `--dart-define`, estados de inicialização, erros em português,
   formulários validados e bloqueio de envios duplicados.
 - Projetos Android, iOS e web, testes de autenticação, navegação e configuração.
+- Migration inicial com tabelas financeiras, RLS, histórico de preços,
+  conversões, custos/margens e consultas para dashboard.
 
-As áreas financeiras mostram apenas a indicação dos recursos previstos. Não há
-saldos, fornecedores, produtos nem transações fictícias. Os únicos fakes estão
-nos testes, isolados do aplicativo.
+As telas financeiras ainda são páginas indicativas: CRUD de fornecedores,
+ingredientes, produtos e transações, dashboards e extrato não foram conectados
+ao banco. Não há saldos ou dados financeiros fictícios no app; os únicos fakes
+estão nos testes, isolados do aplicativo.
 
 ## Pré-requisitos
 
@@ -237,5 +241,5 @@ categorias padrão. Veja [supabase/README.md](supabase/README.md) para aplicá-l
 
 Melhorias posteriores: cache de leitura e fila offline com reconciliação,
 armazenamento de sessão com proteção adicional do sistema e links universais
-verificados. Nesta etapa só a sessão e a intenção de recuperação persistem
-localmente; o app não oferece lançamentos offline.
+verificados. A sessão e a intenção de recuperação persistem localmente; o app
+ainda não oferece lançamentos offline.

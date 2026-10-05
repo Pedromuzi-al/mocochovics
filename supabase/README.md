@@ -1,94 +1,52 @@
-<<<<<<< Updated upstream
-   # Supabase — etapa 2
-
-   Esta etapa entrega a infraestrutura inicial do backend financeiro do app,
-   incluindo tabela do modelo de negócio, RLS, triggers, views, funções de
-   cálculo e seed auxiliar para categorias e configurações padrão.
-
-   A migration principal está em `supabase/migrations/001_init.sql` e foi pensada
-   para ser aplicada em um projeto Supabase novo ou vazio.
-=======
 # Supabase
 
 ## Configuração
->>>>>>> Stashed changes
 
-   ## O que a migration cria
+1. Crie um projeto no [Supabase](https://supabase.com/dashboard).
+2. Copie a **Project URL** e a chave pública **publishable** (ou a chave
+   **anon** legada). Nunca coloque `secret` ou `service_role` no app.
+3. Em **Authentication → Providers → Email**, habilite e-mail/senha e mantenha
+   a confirmação de e-mail.
+4. Em **Authentication → URL Configuration**, cadastre:
+   - `br.com.mocochovisk.app://login-callback` para Android/iOS;
+   - `http://localhost:3000/` para desenvolvimento web;
+   - a URL HTTPS exata do aplicativo publicado.
+5. Preserve `{{ .ConfirmationURL }}` nos templates de confirmação e recuperação
+   e configure SMTP para envio de e-mails a usuários reais.
 
-   - Tabelas de fornecedores, ingredientes, cotações históricas, produtos,
-     itens da receita, categorias de transação, lançamentos, recorrências e
-     configurações do app.
-   - `owner_id uuid references auth.users` em todas as tabelas para isolamento por
-     usuário e multi-tenant.
-   - Trigger de `updated_at` e cálculo do preço por unidade base em
-     `ingredient_prices`.
-   - Índices para consultas de extrato, filtros e dashboards.
-   - Policies RLS explícitas para `select`, `insert`, `update` e `delete`.
-   - Views e funções para preço atual, custo de ingrediente, margem de produto,
-     resumo do dashboard e ranking por fornecedor.
-   - Funções `seed_default_categories` e `ensure_app_settings` para facilitar a
-     entrada inicial do usuário.
+Os arquivos `config/*.example.json` mostram como passar URL e chave ao app.
+O SDK gerencia PKCE, persistência da sessão e atualização de tokens. Abra os
+links de confirmação e recuperação no mesmo dispositivo ou perfil de navegador
+que iniciou a operação.
 
-   ## Aplicar a migration
+## Aplicar a migration inicial
 
-   No painel do Supabase:
+O schema financeiro está em `supabase/migrations/001_init.sql`. Para executar
+em um projeto Supabase novo:
 
-   1. Abra o projeto.
-   2. Acesse `SQL Editor`.
-   3. Execute o conteúdo de `supabase/migrations/001_init.sql`.
-   4. Se quiser popular categorias e configurações para um usuário específico,
-      execute:
+1. Abra o projeto no dashboard e acesse **SQL Editor**.
+2. Cole o conteúdo completo de `supabase/migrations/001_init.sql`.
+3. Execute e confira se a consulta termina sem erros.
 
-   ```sql
-   select public.seed_default_categories(auth.uid());
-   select * from public.app_settings where owner_id = auth.uid();
-   ```
+A migration cria as tabelas, constraints de tenant, policies RLS, triggers,
+views, funções, categorias padrão e configurações. Categorias/configurações são
+inicializadas automaticamente para usuários já existentes e em novos cadastros.
+Os registros de cotação são históricos: o app pode consultar e adicionar
+cotações, mas não alterá-las ou apagá-las.
 
-   ## Configuração de autenticação
+`target_margin`, `alert_price_increase_pct` e `product_recipe_items.loss_rate`
+são frações no banco: por exemplo, `0.30` representa 30%. O custo por unidade
+base usa R$/g, R$/ml ou R$/un; `markup` é o fator `preço de venda ÷ custo`.
 
-   Para o app continuar funcionando com login e sessão persistente, siga também as
-   instruções abaixo:
+O arquivo é uma migration inicial, não um mecanismo de atualização de um schema
+que já tenha sido parcialmente criado por uma versão anterior. Se uma execução
+anterior falhou ou se a migration já foi aplicada, não a execute novamente em
+produção sem verificar o estado do banco e preparar uma migration de reparo.
+Não use `supabase db reset` em um projeto com dados a preservar.
 
-   1. Crie um projeto no [Supabase](https://supabase.com/dashboard).
-   2. Copie a **Project URL** e a chave **publishable** (ou **anon** legada).
-   3. Em **Authentication → Providers → Email**, habilite e-mail/senha e confirmação
-   de e-mail. A senha mínima do app é 8 caracteres; alinhe esse mínimo no painel.
-   4. Em **Authentication → URL Configuration**, cadastre os retornos:
-      - `br.com.mocochovisk.app://login-callback` para Android/iOS;
-      - `http://localhost:3000/` para o teste web local;
-      - a URL HTTPS exata do app ao hospedar a versão web.
-   5. Use uma Site URL web válida no projeto. Confira se os templates de e-mail
-      mantêm o link `{{ .ConfirmationURL }}`. Templates personalizados que descartam
-      `redirect_to` impedem o retorno ao app.
-   6. Configure SMTP para enviar confirmações/recuperações aos usuários reais.
+## CLI (opcional)
 
-<<<<<<< Updated upstream
-   Os arquivos `config/*.example.json` documentam as variáveis. Não use chaves
-   `secret` ou `service_role`: o aplicativo rejeita essas chaves. A autorização dos
-   dados financeiros é feita por RLS, com `owner_id = auth.uid()`.
-
-   Referências: [Flutter + Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/flutter),
-   [redirecionamentos](https://supabase.com/docs/guides/auth/redirect-urls),
-   [deep links](https://supabase.com/docs/guides/auth/native-mobile-deep-linking),
-   [SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
-=======
-Os arquivos `config/*.example.json` documentam as variáveis. Não use chaves
-`secret` ou `service_role`: o aplicativo rejeita essas chaves. Os dados
-financeiros são isolados por RLS com `owner_id = auth.uid()`.
-
-O SDK gerencia PKCE, persistência da sessão e atualização dos tokens. Para
-confirmar cadastro ou recuperar senha, abra o e-mail no mesmo dispositivo e,
-na web, no mesmo perfil de navegador que iniciou a operação. Os callbacks
-mobile já estão registrados no AndroidManifest e Info.plist; o handler padrão
-de deep links do Flutter está desativado para evitar competir com Supabase.
-
-## Aplicar a migration
-
-A migration inicial está em `supabase/migrations/001_init.sql`. Para um projeto
-Supabase já criado, a forma mais direta é abrir **SQL Editor** no dashboard,
-colar o conteúdo do arquivo e executar. O script é idempotente.
-
-Para aplicar migrations pela CLI em um ambiente de desenvolvimento:
+Para novos ambientes locais que usam Supabase CLI:
 
 ```bash
 supabase login
@@ -97,46 +55,28 @@ supabase link --project-ref SEU_PROJECT_REF
 supabase db push
 ```
 
-Execute `supabase init` somente se ainda não houver `supabase/config.toml` e
-preserve os arquivos existentes em `supabase/`. Encontre o Project Ref nas
-configurações do projeto no dashboard. A CLI e o SQL Editor são caminhos
-alternativos; escolha um deles para aplicar esta migration.
+Execute `supabase init` apenas se `supabase/config.toml` ainda não existir.
+Preserve os arquivos já presentes em `supabase/`. O Project Ref fica nas
+configurações do projeto no dashboard. Use a CLI ou o SQL Editor para aplicar a
+migration inicial; não misture os métodos sem conferir o histórico de migrations.
 
-Se executar primeiro pelo SQL Editor e depois usar a CLI, `db push` poderá
-executar novamente o script idempotente para registrar a migration no histórico
-da CLI. Não execute `supabase db reset` em um projeto com dados que deseja
-preservar.
+## Premissas e limites atuais
 
-### O que a migration cria
-
-- Fornecedores, ingredientes, histórico imutável de preços, produtos e receitas,
-  categorias, lançamentos, recorrências e configurações individuais.
-- Policies explícitas de `SELECT`, `INSERT`, `UPDATE` e `DELETE` em todas as
-  tabelas. Cotações de ingredientes permitem leitura e inclusão, mas não edição
-  ou exclusão; correções devem ser registradas como novas cotações.
-- Categorias padrão e configurações iniciais para usuários novos e existentes.
-- Conversão de `kg` para `g` e de `l` para `ml`, custo por ingrediente,
-  custo/margem/markup/preço sugerido por produto e consultas para resumo
-  financeiro, despesas por categoria e gastos por fornecedor.
-
-### Premissas desta etapa
-
-- Cada conta é um tenant independente; não há compartilhamento de dados ou
-  permissões entre funcionários.
-- O resumo considera apenas lançamentos pagos nas entradas e saídas; despesas
-  pendentes são mostradas separadamente.
-- Recorrências são modelos com próxima data de vencimento. A geração automática
-  de lançamentos ou lembretes ficará na etapa de interface.
-- Uma recorrência já usada por um lançamento não pode ser apagada; desative-a
-  para preservar o vínculo e o histórico.
-- A unidade base do ingrediente não pode ser alterada depois do registro de
-  cotações ou receitas, pois isso invalidaria os dados históricos.
-- A tabela de lançamentos guarda o caminho do comprovante (`receipt_path`), mas
-  bucket, políticas do Storage e envio dos arquivos ficam para a feature de
-  lançamentos. Não envie comprovantes ao Storage ainda.
+- Cada conta é um tenant independente; usuários e funcionários não compartilham
+  dados nem têm papéis diferenciados.
+- Entradas/saídas e saldo do dashboard somam lançamentos pagos; contas a pagar
+  pendentes são informadas separadamente.
+- Recorrências são modelos; geração automática de lançamentos e lembretes fica
+  para a etapa da aplicação que implementa essa função.
+- A unidade base do ingrediente é `g`, `ml` ou `un`. Embalagens aceitam `g`,
+  `kg`, `ml`, `l` ou `un`, com conversão compatível feita no banco.
+- A unidade base não pode mudar depois de haver cotações ou itens de receita.
+- `transactions.attachment_url` guarda apenas a referência futura do comprovante.
+  Bucket, policies do Storage e upload ainda não foram implementados.
+- Offline, fila de sincronização, exportação e geração automática de recorrências
+  ainda não estão implementados.
 
 Referências: [Flutter + Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/flutter),
 [redirecionamentos](https://supabase.com/docs/guides/auth/redirect-urls),
 [deep links](https://supabase.com/docs/guides/auth/native-mobile-deep-linking),
 [SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
->>>>>>> Stashed changes
