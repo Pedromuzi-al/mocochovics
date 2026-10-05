@@ -58,8 +58,10 @@ versionada. O `pubspec.lock` deve ser mantido para builds reproduzíveis.
 6. Preserve `{{ .ConfirmationURL }}` nos templates de confirmação e recuperação.
 
 Veja os detalhes e referências oficiais em [supabase/README.md](supabase/README.md).
-Nenhuma migration é necessária para testar Auth na etapa 1. A migration SQL,
-RLS, views, funções e seed serão implementados na etapa 2.
+Nenhuma migration é necessária para testar Auth isoladamente. O schema inicial,
+RLS, views, funções e categorias padrão estão em
+`supabase/migrations/001_init.sql`; consulte [supabase/README.md](supabase/README.md)
+para aplicá-la ao projeto.
 
 ### Android / iOS
 
@@ -202,7 +204,7 @@ lib/
     suppliers/
     transactions/
 config/           # exemplos de dart-define
-supabase/         # instruções; migrations serão entregues na etapa 2
+supabase/         # migration inicial, RLS, views e instruções
 test/             # testes e fakes isolados
 assets/fonts/     # Inter + licença SIL OFL
 ```
@@ -224,7 +226,9 @@ centavos inteiros e usa vírgula decimal em pt-BR.
 
 ## Próximas entregas e melhorias
 
-2. Migration idempotente, RLS explícita, funções/views e categorias padrão.
+Etapa 2 concluída: migration idempotente, RLS explícita, funções/views e
+categorias padrão. Veja [supabase/README.md](supabase/README.md) para aplicá-la.
+
 3. Fornecedores, ingredientes, histórico e comparação de preços.
 4. Entradas/saídas, categorias, recorrência e extrato filtrado.
 5. Produtos, receitas, custos, margem e sugestão de preço.
