@@ -117,17 +117,14 @@ class _AppShellState extends ConsumerState<AppShell> {
         ),
       ],
     );
-    // O GoRouter mantém um Navigator por aba. O padding permite rolar atrás
-    // da barra translúcida sem esconder o último item.
     return CupertinoPageScaffold(
       child: Stack(
         children: [
           Positioned.fill(
+            bottom: bottomInset + tabBar.preferredSize.height,
             child: MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                padding: MediaQuery.paddingOf(
-                  context,
-                ).copyWith(bottom: bottomInset + tabBar.preferredSize.height),
+                padding: MediaQuery.paddingOf(context).copyWith(bottom: 0),
               ),
               child: widget.navigationShell,
             ),

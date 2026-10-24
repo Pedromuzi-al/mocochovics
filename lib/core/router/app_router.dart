@@ -14,6 +14,8 @@ import '../../features/settings/presentation/pages/about_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/statement/presentation/pages/statement_page.dart';
 import '../../features/suppliers/presentation/pages/suppliers_page.dart';
+import '../../features/transactions/presentation/pages/categories_page.dart';
+import '../../features/transactions/presentation/pages/recurring_page.dart';
 import 'app_shell.dart';
 import 'auth_redirect.dart';
 
@@ -55,6 +57,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 const SettingsPage(),
                 routes: [
                   _route('ingredientes', const IngredientsPage()),
+                  _route('categorias', const CategoriesPage()),
+                  _route('recorrencias', const RecurringPage()),
                   _route('sobre', const AboutPage()),
                 ],
               ),

@@ -119,6 +119,18 @@ class SettingsPage extends ConsumerWidget {
                   trailing: const CupertinoListTileChevron(),
                   onTap: () => context.go('/mais/ingredientes'),
                 ),
+                CupertinoListTile.notched(
+                  title: const Text('Categorias'),
+                  leading: const Icon(CupertinoIcons.tag),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => context.go('/mais/categorias'),
+                ),
+                CupertinoListTile.notched(
+                  title: const Text('Recorrências'),
+                  leading: const Icon(CupertinoIcons.repeat),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => context.go('/mais/recorrencias'),
+                ),
               ],
             ),
           ),

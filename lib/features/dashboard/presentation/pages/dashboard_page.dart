@@ -57,9 +57,9 @@ class DashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'A navegação e o acesso à sua conta estão prontos. '
-                  'Os cadastros e as informações financeiras serão '
-                  'adicionados nas próximas etapas.',
+                  'Cadastre fornecedores e ingredientes, compare preços e '
+                  'registre entradas e saídas no Extrato. Produtos e os '
+                  'indicadores do painel chegam nas próximas etapas.',
                   style: textTheme.textStyle.copyWith(
                     fontSize: 15,
                     color: secondaryLabel,

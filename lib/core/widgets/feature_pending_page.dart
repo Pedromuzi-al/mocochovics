@@ -64,8 +64,8 @@ class FeaturePendingPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Você está na primeira etapa: estrutura, navegação e acesso '
-                  'à conta. Os recursos desta tela ainda não estão disponíveis.',
+                  'Os recursos desta tela serão disponibilizados em uma '
+                  'próxima etapa.',
                   style: textTheme.textStyle.copyWith(
                     fontSize: 15,
                     color: secondaryLabel,

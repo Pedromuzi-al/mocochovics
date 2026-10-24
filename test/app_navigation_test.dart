@@ -15,6 +15,9 @@ import 'package:mocochovisk/features/settings/presentation/pages/about_page.dart
 import 'package:mocochovisk/features/settings/presentation/pages/settings_page.dart';
 
 import 'features/auth/fake_auth_repository.dart';
+import 'features/transactions/fake_finance_repository.dart';
+
+import 'package:mocochovisk/features/transactions/data/finance_repository.dart';
 
 const _signedIn = AuthSession(email: 'dono@bar.example', isAuthenticated: true);
 
@@ -24,7 +27,10 @@ Future<({FakeAuthRepository repository, GoRouter router})> _pumpApp(
 }) async {
   final repository = FakeAuthRepository(session: session);
   final container = ProviderContainer(
-    overrides: [authRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      authRepositoryProvider.overrideWithValue(repository),
+      financeRepositoryProvider.overrideWithValue(FakeFinanceRepository()),
+    ],
   );
   addTearDown(() async {
     await tester.pumpWidget(const SizedBox.shrink());
@@ -127,7 +133,8 @@ void main() {
       expect(find.byType(SettingsPage), findsOneWidget);
       expect(app.router.routeInformationProvider.value.uri.path, '/mais');
 
-      await tester.ensureVisible(find.text('Sobre'));
+      await tester.scrollUntilVisible(find.text('Sobre'), 200);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Sobre'));
       await tester.pumpAndSettle();
       expect(find.byType(AboutPage), findsOneWidget);
@@ -143,7 +150,8 @@ void main() {
   ) async {
     final app = await _pumpApp(tester);
     await _tapTab(tester, 'Mais');
-    await tester.ensureVisible(find.text('Sair da conta'));
+    await tester.scrollUntilVisible(find.text('Sair da conta'), 200);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair da conta'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancelar'));
@@ -165,7 +173,8 @@ void main() {
     final app = await _pumpApp(tester);
     app.repository.failure = const AuthFailure('Sem conexão. Tente novamente.');
     await _tapTab(tester, 'Mais');
-    await tester.ensureVisible(find.text('Sair da conta'));
+    await tester.scrollUntilVisible(find.text('Sair da conta'), 200);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair da conta'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sair'));
