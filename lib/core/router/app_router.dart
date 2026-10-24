@@ -11,6 +11,7 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/ingredients/presentation/pages/ingredients_page.dart';
 import '../../features/products/presentation/pages/products_page.dart';
 import '../../features/settings/presentation/pages/about_page.dart';
+import '../../features/settings/presentation/pages/cost_settings_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/statement/presentation/pages/statement_page.dart';
 import '../../features/suppliers/presentation/pages/suppliers_page.dart';
@@ -59,6 +60,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   _route('ingredientes', const IngredientsPage()),
                   _route('categorias', const CategoriesPage()),
                   _route('recorrencias', const RecurringPage()),
+                  _route('configuracoes', const CostSettingsPage()),
                   _route('sobre', const AboutPage()),
                 ],
               ),

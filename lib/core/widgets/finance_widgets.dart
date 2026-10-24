@@ -13,6 +13,9 @@ import 'feature_scaffold.dart';
 String financeError(Object error) {
   if (error is FormatException) return error.message;
   if (error is PostgrestException) {
+    if (error.code == '42P01' || error.code == 'PGRST205') {
+      return 'Atualize o banco aplicando as migrations 001 e 002 do projeto no Supabase e tente novamente.';
+    }
     if (error.code == '23503') {
       return 'Este cadastro está em uso. Desative-o ou remova os vínculos antes de excluir.';
     }
@@ -170,10 +173,12 @@ class EditField {
     this.maxLength = 200,
     this.visible,
     this.validate,
+    this.allowZero = false,
   });
   final String key;
   final String label;
   final bool required, number, money, integer, date, toggle;
+  final bool allowZero;
   final Map<String, String>? options;
   final Map<String, String> Function(DataRow values)? optionsBuilder;
   final Object? defaultValue;
@@ -287,6 +292,7 @@ class _RecordEditorState extends State<RecordEditor> {
           payload[field.key] = FinancialMath.number(
             value.toString(),
             scale: field.money ? 2 : 6,
+            positive: !field.allowZero,
           );
         } else {
           payload[field.key] = value.toString().trim();
@@ -449,7 +455,11 @@ class _RecordEditorState extends State<RecordEditor> {
               }
               if (field.money || field.number) {
                 try {
-                  FinancialMath.number(text, scale: field.money ? 2 : 6);
+                  FinancialMath.number(
+                    text,
+                    scale: field.money ? 2 : 6,
+                    positive: !field.allowZero,
+                  );
                 } on FormatException catch (error) {
                   return error.message;
                 }

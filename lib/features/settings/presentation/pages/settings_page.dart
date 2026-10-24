@@ -131,6 +131,12 @@ class SettingsPage extends ConsumerWidget {
                   trailing: const CupertinoListTileChevron(),
                   onTap: () => context.go('/mais/recorrencias'),
                 ),
+                CupertinoListTile.notched(
+                  title: const Text('Custos e alertas'),
+                  leading: const Icon(CupertinoIcons.slider_horizontal_3),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => context.go('/mais/configuracoes'),
+                ),
               ],
             ),
           ),
