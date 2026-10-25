@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/finance_widgets.dart';
 import '../../../../core/widgets/premium_finance.dart';
 import '../../../products/domain/product_financials.dart';
-import '../../../transactions/data/finance_repository.dart';
 
 class CostSettingsPage extends ConsumerWidget {
   const CostSettingsPage({super.key});
@@ -96,32 +95,29 @@ class CostSettingsPage extends ConsumerWidget {
                       number: true,
                       allowZero: true,
                       validate: (value) =>
-                          Decimal.parse(value.replaceAll(',', '.')) >=
-                              Decimal.fromInt(100)
-                          ? 'A margem deve ser menor que 100%.'
-                          : null,
+                          CostPreferences.percentageError(value, margin: true),
                     ),
-                    const EditField(
+                    EditField(
                       'alert_percent',
                       'Alertar aumentos acima de (%)',
                       required: true,
                       number: true,
                       allowZero: true,
+                      validate: CostPreferences.percentageError,
                     ),
                   ],
                   transform: (values) {
-                    final margin = Decimal.parse(
+                    final margin = CostPreferences.percentToFraction(
                       values.remove('margin_percent'),
+                      margin: true,
                     );
-                    final alert = Decimal.parse(values.remove('alert_percent'));
+                    final alert = CostPreferences.percentToFraction(
+                      values.remove('alert_percent'),
+                    );
                     return {
                       ...values,
-                      'target_margin': (margin / Decimal.fromInt(100))
-                          .toDecimal()
-                          .toString(),
-                      'price_alert_threshold': (alert / Decimal.fromInt(100))
-                          .toDecimal()
-                          .toString(),
+                      'target_margin': margin.toString(),
+                      'price_alert_threshold': alert.toString(),
                     };
                   },
                 ),

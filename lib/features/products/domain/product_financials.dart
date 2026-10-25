@@ -1,8 +1,9 @@
 import 'package:decimal/decimal.dart';
 
 import '../../../core/utils/financial_math.dart';
+import '../../../core/utils/br_formatters.dart';
 import '../../ingredients/domain/price_history.dart';
-import '../../transactions/data/finance_repository.dart';
+import '../../transactions/domain/finance_snapshot.dart';
 import '../../transactions/domain/statement_filter.dart';
 
 Decimal? decimalOrNull(Object? value) =>
@@ -16,19 +17,9 @@ Decimal roundedDivision(Decimal numerator, Decimal denominator, int scale) =>
         .round(scale: scale);
 String localizedDecimal(Decimal value, [int digits = 2]) =>
     value.toStringAsFixed(digits).replaceAll('.', ',');
-String money(Decimal? value) =>
-    value == null ? 'Sem custo disponível' : BrMoney.format(value);
-
-abstract final class BrMoney {
-  static String format(Decimal value) {
-    final cents = FinancialMath.cents(value);
-    final whole = (cents.abs() ~/ 100).toString().replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (_) => '.',
-    );
-    return '${cents < 0 ? '−' : ''}R\$\u00a0$whole,${(cents.abs() % 100).toString().padLeft(2, '0')}';
-  }
-}
+String money(Decimal? value) => value == null
+    ? 'Sem custo disponível'
+    : BrFormatters.currencyFromCents(FinancialMath.cents(value));
 
 class CostPreferences {
   const CostPreferences({
@@ -59,14 +50,38 @@ class CostPreferences {
     'lowest_active' => 'Menor preço ativo',
     _ => 'Média ponderada ($purchaseCount compras)',
   };
+  static Decimal percentToFraction(String input, {bool margin = false}) {
+    final percentage = Decimal.parse(
+      FinancialMath.number(input, scale: 4, positive: false),
+    );
+    if (margin && percentage >= Decimal.fromInt(100)) {
+      throw const FormatException('A margem deve ser menor que 100%.');
+    }
+    return (percentage / Decimal.fromInt(100)).toDecimal();
+  }
+
+  static String? percentageError(String input, {bool margin = false}) {
+    try {
+      percentToFraction(input, margin: margin);
+      return null;
+    } on FormatException catch (error) {
+      return error.message;
+    }
+  }
 }
 
 class RecipeComponent {
-  const RecipeComponent({
+  RecipeComponent({
     required this.quantity,
     required this.loss,
     required this.unitCost,
-  });
+  }) {
+    if (quantity <= Decimal.zero ||
+        loss < Decimal.zero ||
+        (unitCost != null && unitCost! < Decimal.zero)) {
+      throw ArgumentError('Quantidade, perda ou custo inválido.');
+    }
+  }
   final Decimal quantity, loss;
   final Decimal? unitCost;
   Decimal? get cost =>
@@ -91,8 +106,9 @@ class ProductFinancials {
   }) {
     if (salePrice <= Decimal.zero ||
         targetMargin < Decimal.zero ||
-        targetMargin >= Decimal.one)
+        targetMargin >= Decimal.one) {
       throw ArgumentError('Preço e margem-alvo inválidos.');
+    }
     final complete =
         recipe.isNotEmpty && recipe.every((item) => item.unitCost != null);
     return ProductFinancials(
@@ -127,7 +143,16 @@ abstract final class IngredientCostPolicy {
     String method = 'weighted_average',
     int purchaseCount = 5,
   }) {
-    if (purchaseCount < 1) throw ArgumentError.value(purchaseCount);
+    if (purchaseCount < 1 || purchaseCount > 1000) {
+      throw ArgumentError.value(purchaseCount);
+    }
+    if (!const [
+      'last_paid',
+      'weighted_average',
+      'lowest_active',
+    ].contains(method)) {
+      throw ArgumentError.value(method);
+    }
     if (method == 'lowest_active') {
       return PriceHistory.current(history)
           .where((row) => activeSuppliers.contains(row['supplier_id']))
@@ -138,8 +163,9 @@ abstract final class IngredientCostPolicy {
       history.where((row) => row['kind'] == 'purchase'),
     ).reversed.toList();
     if (purchases.isEmpty) return null;
-    if (method == 'last_paid')
+    if (method == 'last_paid') {
       return Decimal.parse(purchases.first['unit_price'].toString());
+    }
     final recent = purchases.take(purchaseCount);
     final total = recent.fold(
       Decimal.zero,

@@ -36,11 +36,12 @@ class FinancialLineChart extends StatelessWidget {
     final visible = series
         .where((item) => item.points.any((point) => point.value != null))
         .toList();
-    if (visible.isEmpty)
+    if (visible.isEmpty) {
       return FinanceEmptyState(
         message: emptyMessage,
-        icon: CupertinoIcons.chart_xyaxis_line,
+        icon: CupertinoIcons.chart_bar,
       );
+    }
     final dates =
         visible
             .expand((item) => item.points.map((point) => point.date))
@@ -181,7 +182,7 @@ class FinancialLineChart extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${visible[index].label} · ${_value(visible[index].points.lastWhere((point) => point.value != null).value!)}',
+                    '${visible[index].label} · último valor disponível: ${_value(visible[index].points.lastWhere((point) => point.value != null).value!)}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.secondaryTextColor.resolveFrom(context),
@@ -201,10 +202,11 @@ class CashFlowChart extends StatelessWidget {
   final DashboardReport report;
   @override
   Widget build(BuildContext context) {
-    if (!report.hasPayments)
+    if (!report.hasPayments) {
       return const FinanceEmptyState(
         message: 'Registre entradas e saídas pagas para acompanhar o caixa.',
       );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,8 +274,9 @@ class CashFlowChart extends StatelessWidget {
                                       1,
                                       (report.buckets.length / 4).ceil(),
                                     ) !=
-                                0)
+                                0) {
                           return const SizedBox.shrink();
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
@@ -349,11 +352,12 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
   int? _selected;
   @override
   Widget build(BuildContext context) {
-    if (widget.categories.isEmpty)
+    if (widget.categories.isEmpty) {
       return const FinanceEmptyState(
         message: 'Nenhuma despesa paga no período.',
         icon: CupertinoIcons.chart_pie,
       );
+    }
     final total = widget.categories.fold<int>(
       0,
       (sum, item) => sum + item.cents,

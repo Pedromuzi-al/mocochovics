@@ -1,11 +1,12 @@
-# Supabase — etapas 1 a 4
+# Supabase — etapas 1 a 6
 
 ## Aplicação
 
 Crie um projeto Supabase e execute todo o conteúdo de
-`migrations/001_init.sql` no SQL Editor com a função administrativa do painel.
-O arquivo usa uma transação e pode ser reaplicado ao mesmo schema sem duplicar
-tabelas, índices, policies, triggers ou bucket.
+`migrations/001_init.sql` e depois `migrations/002_product_history.sql` no SQL Editor
+com a função administrativa do painel. Os arquivos usam transações e podem ser
+reaplicados sem duplicar estruturas. Em projetos que já possuem a etapa 4,
+aplique somente a migration 002.
 
 Essa migration é a inicial de um projeto novo; alterações futuras de schema
 devem receber novas migrations incrementais.
@@ -17,9 +18,12 @@ a chave pública no aplicativo. Não há projeto remoto ou credenciais incluído
 
 - `suppliers`, `ingredients`, `ingredient_prices`.
 - `transactions`, `transaction_categories`, `recurring_transactions`.
-- `products`, `product_recipe_items`, `app_settings` (base da etapa 5).
+- `products`, `product_recipe_items`, `app_settings`.
+- `product_cost_history` (observações de custos desde a migration 002).
 
-Todas as tabelas têm UUID, dono, timestamps, RLS e policies para cada operação.
+Todas as tabelas têm UUID, dono, timestamps e RLS. As nove tabelas operacionais
+têm policies para cada operação; o histórico de produtos permite somente leitura
+ao dono e não concede inserção, alteração ou exclusão ao cliente.
 Chaves estrangeiras compostas impedem referências a cadastros de outros donos.
 O histórico de preços bloqueia edição/exclusão por trigger; para corrigir um
 preço, insira um registro com a nova cotação.
@@ -45,8 +49,42 @@ A unidade base de um ingrediente em uso não pode ser alterada.
 - `generate_recurring()`: gera pendências até a data corrente e avança o
   vencimento. Bloqueios de linha e chave única evitam geração concorrente duplicada.
 
-As views usam security_invoker e as funções de negócio usam o contexto do
-usuário, respeitando a RLS. Não há função de negócio security definer.
+As views usam security_invoker e as RPCs usam o contexto do usuário, respeitando
+a RLS. A função de trigger `record_product_costs` usa security definer apenas
+para gravar o histórico protegido: tem search_path vazio, filtra pelo dono da
+linha que disparou o evento e não concede execução direta aos clientes.
+
+## Histórico dos produtos
+
+A migration 002 registra custo, preço de venda, margem-alvo e método de cálculo
+quando essas informações mudam por produto, receita, preços, fornecedor ativo
+ou configurações. Mudanças sem efeito financeiro não duplicam observações.
+Um bloqueio por dono serializa a geração; a coluna revision determina a ordem.
+
+Produtos existentes recebem uma observação inicial na data da aplicação. Não
+há reconstrução artificial de custos anteriores. O histórico é de observação:
+uma compra retroativa só altera o histórico do produto na data em que é inserida.
+Os gráficos usam a última observação por dia e podem trazer uma observação
+anterior como referência no início do período. Custos desconhecidos geram lacunas.
+Excluir um produto remove sua receita e seu histórico de custos.
+
+As configurações ficam em Mais → Custos e alertas e se aplicam a todos os
+produtos. Perda, margem e limite de alerta entram na interface em porcentagem;
+o banco armazena frações com seis casas. A entrada percentual aceita até quatro
+casas, evitando arredondamentos silenciosos.
+
+## Dashboard
+
+O app agrega as linhas protegidas por RLS usando centavos/Decimal no domínio;
+as views e RPCs continuam disponíveis para consultas no banco. Consultas são
+paginadas em lotes de 500 para não truncar resultados no limite padrão da API.
+Atualizações no app invalidam a leitura compartilhada; alterações de outros
+dispositivos aparecem ao atualizar a lista. Não há assinatura Realtime nesta etapa.
+
+Caixa, categorias e fornecedores consideram pagamentos no período escolhido.
+Contas a pagar são somente saídas pendentes. Margens e seu ranking são atuais,
+independentemente do período. Alertas de ingredientes comparam a última cotação
+no período com a anterior por fornecedor ativo; o aumento deve superar o limite.
 
 ## Regras operacionais
 

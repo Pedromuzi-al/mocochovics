@@ -6,6 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../domain/statement_filter.dart';
+import '../domain/finance_snapshot.dart';
+
+export '../domain/finance_snapshot.dart';
 
 final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -28,32 +31,6 @@ final financeSnapshotProvider = FutureProvider.autoDispose<FinanceSnapshot>((
   final rows = await Future.wait(FinanceSnapshot.tables.map(repository.read));
   return FinanceSnapshot(Map.fromIterables(FinanceSnapshot.tables, rows));
 });
-
-class FinanceSnapshot {
-  const FinanceSnapshot(this.data);
-  static const tables = [
-    'suppliers',
-    'ingredients',
-    'ingredient_prices',
-    'transaction_categories',
-    'transactions',
-    'recurring_transactions',
-    'products',
-    'product_recipe_items',
-    'app_settings',
-    'ingredient_costs',
-    'product_costs',
-    'product_cost_history',
-  ];
-  final Map<String, List<DataRow>> data;
-  List<DataRow> rows(String table) => data[table] ?? const [];
-  String name(String table, Object? id) {
-    for (final row in rows(table)) {
-      if (row['id'] == id) return row['name'].toString();
-    }
-    return 'Não informado';
-  }
-}
 
 abstract interface class FinanceRepository {
   Future<void> prepare();

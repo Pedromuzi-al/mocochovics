@@ -27,7 +27,7 @@ class ProductDetailPage extends ConsumerWidget {
           .rows('products')
           .where((row) => row['id'] == id)
           .firstOrNull;
-      if (product == null)
+      if (product == null) {
         return [
           const SliverToBoxAdapter(
             child: FinanceEmptyState(
@@ -36,6 +36,7 @@ class ProductDetailPage extends ConsumerWidget {
             ),
           ),
         ];
+      }
       final row = snapshot
           .rows('product_costs')
           .where((row) => row['id'] == id)
@@ -239,16 +240,32 @@ class ProductDetailPage extends ConsumerWidget {
                 title: 'Preços recentes dos ingredientes da ficha atual',
                 children: [
                   for (final price in prices)
-                    CupertinoListTile(
-                      title: Text(
-                        snapshot.name('ingredients', price['ingredient_id']),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
-                      subtitle: Text(
-                        '${snapshot.name('suppliers', price['supplier_id'])} · ${BrFormatters.date(DateTime.parse(price['date']))}',
-                        maxLines: 3,
-                      ),
-                      additionalInfo: Text(
-                        'R\$ ${localizedDecimal(Decimal.parse(price['unit_price'].toString()), 6)}',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LabeledAmount(
+                            label: snapshot.name(
+                              'ingredients',
+                              price['ingredient_id'],
+                            ),
+                            amount:
+                                'R\$ ${localizedDecimal(Decimal.parse(price['unit_price'].toString()), 6)}/${ingredients[price['ingredient_id']]?['base_unit'] ?? ''}',
+                          ),
+                          Text(
+                            '${snapshot.name('suppliers', price['supplier_id'])} · ${BrFormatters.date(DateTime.parse(price['date']))}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.secondaryTextColor.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -314,23 +331,21 @@ class ProductDetailPage extends ConsumerWidget {
           required: true,
           number: true,
         ),
-        const EditField(
+        EditField(
           'loss_percent',
           'Perda / quebra (%)',
           required: true,
           number: true,
           allowZero: true,
           defaultValue: '0',
+          validate: CostPreferences.percentageError,
         ),
       ],
       transform: (values) {
-        final loss =
-            Decimal.parse(values.remove('loss_percent')) / Decimal.fromInt(100);
-        return {
-          ...values,
-          'product_id': id,
-          'loss': loss.toDecimal().toString(),
-        };
+        final loss = CostPreferences.percentToFraction(
+          values.remove('loss_percent'),
+        );
+        return {...values, 'product_id': id, 'loss': loss.toString()};
       },
     );
   }

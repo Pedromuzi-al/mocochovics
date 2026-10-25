@@ -91,13 +91,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Início',
-    trailing: CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () => openFinancePage<void>(context, const CostSettingsPage()),
-      child: const Icon(
-        CupertinoIcons.slider_horizontal_3,
-        semanticLabel: 'Configurar custos e alertas',
-      ),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: ref.watch(financeSnapshotProvider).asData?.value == null
+              ? null
+              : () {
+                  final snapshot = ref
+                      .read(financeSnapshotProvider)
+                      .asData
+                      ?.value;
+                  if (snapshot != null) editTransaction(context, ref, snapshot);
+                },
+          child: const Icon(
+            CupertinoIcons.add,
+            semanticLabel: 'Novo lançamento',
+          ),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () =>
+              openFinancePage<void>(context, const CostSettingsPage()),
+          child: const Icon(
+            CupertinoIcons.slider_horizontal_3,
+            semanticLabel: 'Configurar custos e alertas',
+          ),
+        ),
+      ],
     ),
     builder: (snapshot) {
       final range = _range;
@@ -261,7 +283,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           value: BrFormatters.currencyFromCents(
                             report.supplierSpend,
                           ),
-                          icon: CupertinoIcons.shippingbox,
+                          icon: CupertinoIcons.cube_box,
                           accent: AppTheme.actionColor,
                         ),
                       ),
@@ -442,8 +464,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                 row['id'] as String: row['name'].toString(),
                             },
                           );
-                          if (selected != null && mounted)
+                          if (selected != null && mounted) {
                             setState(() => _ingredientId = selected);
+                          }
                         },
                         child: Row(
                           children: [
@@ -486,8 +509,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             'Produto',
                             rowOptions(snapshot, 'products'),
                           );
-                          if (selected != null && mounted)
+                          if (selected != null && mounted) {
                             setState(() => _productId = selected);
+                          }
                         },
                         child: Row(
                           children: [
@@ -586,8 +610,13 @@ class _BalanceHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final reduced = MediaQuery.of(context).accessibleNavigation;
-    final background = dark ? const Color(0xFF0C251C) : const Color(0xFFE4F3EC);
-    final foreground = dark ? const Color(0xFF8BF0BD) : const Color(0xFF125435);
+    final negative = report.totals.balance < 0;
+    final background = negative
+        ? (dark ? const Color(0xFF2B1519) : const Color(0xFFF9EBEE))
+        : (dark ? const Color(0xFF0C251C) : const Color(0xFFE4F3EC));
+    final foreground = negative
+        ? (dark ? const Color(0xFFFFB0B7) : const Color(0xFF8F2935))
+        : (dark ? const Color(0xFF8BF0BD) : const Color(0xFF125435));
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -600,7 +629,13 @@ class _BalanceHero extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   background,
-                  dark ? const Color(0xFF112C22) : const Color(0xFFF0F8F3),
+                  negative
+                      ? (dark
+                            ? const Color(0xFF341A1F)
+                            : const Color(0xFFFDF4F5))
+                      : (dark
+                            ? const Color(0xFF112C22)
+                            : const Color(0xFFF0F8F3)),
                 ],
               ),
       ),

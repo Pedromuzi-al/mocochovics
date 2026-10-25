@@ -1,8 +1,8 @@
 # Bar do Mocochovisk
 
 Aplicativo Flutter com interface Cupertino em português do Brasil e Supabase.
-**Escopo atual: etapas 1 a 4.** Produtos/fichas técnicas (5), dashboard (6) e
-exportação PDF/CSV (7) ficam para a próxima entrega.
+**Escopo atual: etapas 1 a 6.** Exportação PDF/CSV e os acabamentos finais da
+etapa 7 ficam para a próxima entrega.
 
 ## Recursos disponíveis
 
@@ -22,10 +22,19 @@ exportação PDF/CSV (7) ficam para a próxima entrega.
   edição/exclusão confirmada, totais e saldo acumulado do filtro.
 - Migration idempotente com nove tabelas, RLS, chaves compostas entre usuários,
   índices, triggers, views de preços/custos e RPCs de compras/recorrências/resumos.
+- Produtos com cadastro, ficha técnica, perdas, custo, lucro bruto estimado,
+  margem, markup e preço sugerido a partir da margem-alvo.
+- Configurações de método de custo, quantidade de compras para a média,
+  margem-alvo e limite de aumento de preço em Mais → Custos e alertas.
+- Dashboard com períodos, cards, gráficos interativos, rankings e alertas de
+  preço/margem. Base Apple com destaque financeiro no painel e listas discretas
+  nas demais áreas, conforme o prompt visual.
+- Histórico de custos por produto, gerado automaticamente no banco pela
+  migration 002 e protegido contra escrita direta pelo cliente.
 
 Os dados do aplicativo vêm do Supabase. Os registros fictícios existem somente
-nos testes. A aba Início mantém atalhos; Produtos permanece sinalizado como
-recurso de uma etapa futura.
+nos testes, inclusive nas capturas de tela. O saldo considera movimentos pagos;
+as margens usam apenas os ingredientes e não representam lucro líquido.
 
 ## Pré-requisitos
 
@@ -57,8 +66,11 @@ Nas demais plataformas, use `flutter` diretamente.
    - `http://localhost:3000/` para desenvolvimento web;
    - a URL HTTPS exata de sua publicação web.
 4. Preserve `{{ .ConfirmationURL }}` nos templates de confirmação/recuperação.
-5. Execute **todo** o arquivo `supabase/migrations/001_init.sql` no SQL Editor.
-   Ele cria também o bucket privado `receipts` e suas policies.
+5. Execute `supabase/migrations/001_init.sql` e depois
+   `supabase/migrations/002_product_history.sql` no SQL Editor. O primeiro cria
+   também o bucket privado `receipts`. Se a etapa 4 já está instalada, basta
+   aplicar a migration 002. Ela preserva os cadastros existentes e registra uma
+   observação inicial dos custos atuais, sem inventar valores de datas anteriores.
 6. Copie um dos arquivos de configuração de exemplo e preencha os dados reais.
 
 ```powershell
@@ -82,7 +94,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run -d c
 Sem configuração válida, o app apresenta orientação para conectar ao Supabase.
 Sem a migration, as telas de dados apresentam erro com opção de tentar novamente.
 
-## Roteiro de validação das etapas 1 a 4
+## Roteiro de validação das etapas 1 a 6
 
 1. Cadastre uma conta, confirme o e-mail, entre, feche/reabra e confira a sessão.
    Solicite recuperação e defina uma nova senha no mesmo dispositivo/perfil.
@@ -102,6 +114,19 @@ Sem a migration, as telas de dados apresentam erro com opção de tentar novamen
 9. Entre com outra conta: fornecedores, ingredientes, lançamentos, views e
    comprovantes da primeira conta devem permanecer inacessíveis.
 10. Confira modo escuro, fonte ampliada, telas estreitas e falhas de rede.
+11. Cadastre um produto vendido a R$ 10. Na ficha, adicione 100 g de ingrediente
+    a R$ 0,02/g com perda de 10% e 50 ml de outro a R$ 0,03/ml. Confira custo
+    R$ 3,70, lucro bruto R$ 6,30, margem 63%, markup 2,703× e sugestão R$ 5,29
+    para a meta de 30%. Registre compras, não apenas cotações, para o método padrão.
+12. Altere os preços e confira a atualização do produto e do histórico. Troque
+    o método em Custos e alertas; sem compras/preços suficientes, o custo deve
+    aparecer indisponível. Não deve virar zero por falta de informação.
+13. No Início, troque entre hoje, sete dias, mês, mês anterior e personalizado.
+    Compare os cards com os mesmos períodos do extrato. Pendências a receber
+    não compõem as contas a pagar nem o saldo pago.
+14. Toque em barras, linhas e categorias; selecione ingredientes/produtos nos
+    gráficos. Confira rankings de fornecedores e margens. Alertas de preço
+    respeitam o período; margens são a situação atual dos produtos.
 
 ## Verificações automatizadas
 
@@ -112,15 +137,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 build we
 ```
 
 A suíte cobre autenticação, navegação, configuração, formulários, falhas de
-persistência, filtros, saldos, conversão de unidades, decimais e histórico.
+persistência, filtros, saldos, conversão de unidades, decimais, receitas, perdas,
+margem, markup, configurações, períodos, agrupamentos, alertas e histórico.
 
-Verificado nesta entrega: 57 testes aprovados, uma captura visual opcional
-ignorada, análise sem issues e build web compilado. O teste SQL local também
-passou. Os serviços de e-mail e comprovantes ainda precisam da validação em
-um projeto Supabase real; builds Android/iOS não foram executados nesta entrega.
+Verificado nesta entrega: 80 testes aprovados com as capturas visuais habilitadas
+(79 testes de comportamento e uma captura opcional), análise sem issues,
+formatação verificada, build web compilado e testes SQL locais aprovados.
+Os serviços de e-mail e comprovantes ainda precisam da validação em um projeto
+Supabase real; builds Android/iOS não foram executados nesta entrega.
 
-`scripts/validate_sql.mjs` executa a migration duas vezes e testa RLS, integridade
-entre donos, compra atômica, histórico imutável, recorrências e custos. Para
+Para gerar as capturas, execute os testes com
+`--dart-define=CAPTURE_PREVIEWS=true`. As imagens ficam em `build/previews/`:
+login claro/escuro, dashboard claro/escuro, gráficos, lista de produtos e detalhe do produto.
+Elas renderizam os widgets reais com registros exclusivamente de teste.
+
+`scripts/validate_sql.mjs` executa as migrations duas vezes e testa RLS, integridade
+entre donos, compra atômica, histórico imutável, recorrências, custos e as
+permissões e atualizações do histórico dos produtos. Para
 executá-lo com Node e npm instalados:
 
 ```powershell
@@ -146,15 +179,21 @@ No Windows, os comandos podem ser passados ao script acima. Android release
 ainda exige configurar um keystore próprio; o template utiliza assinatura debug.
 iOS exige macOS e assinatura configurada no Xcode.
 
+O build de verificação em `build/web/` foi gerado sem credenciais e abre a
+orientação de configuração. Gere novamente com o arquivo de configuração real
+para acessar os dados do seu projeto Supabase.
+
 ## Organização e decisões
 
 `lib/core` reúne configuração, navegação, tema, formatação e componentes.
 `lib/features/auth` mantém domínio/repositório/controller de autenticação.
 As features de fornecedores, ingredientes, transações e extrato reutilizam o
-repositório financeiro injetável e o editor de formulários; regras de preços e
-filtros ficam em módulos de domínio separados da apresentação. O banco aplica
+repositório financeiro injetável e o editor de formulários; regras de preços,
+fichas técnicas, indicadores e filtros ficam em módulos de domínio independentes
+dos widgets e do cliente Supabase. O banco aplica
 cálculos e operações que precisam de atomicidade. Modelos pequenos usam mapas
-tipados como `DataRow`; DTOs próprios podem ser introduzidos com a etapa 5.
+tipados como `DataRow`; `ProductFinancials`, `RecipeComponent`, `CostPreferences`
+e os modelos do dashboard representam cálculos e indicadores.
 
 Assumimos um dono por conta, sem equipe compartilhada e sem controle de estoque.
 Valores financeiros usam Decimal/centavos no Dart e numeric no Postgres;

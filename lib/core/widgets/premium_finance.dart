@@ -78,7 +78,7 @@ class SectionHeading extends StatelessWidget {
                 ),
               ),
             ),
-            if (action != null) action!,
+            ?action,
           ],
         ),
         if (subtitle != null)
@@ -128,11 +128,17 @@ class FinanceMetricCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 21),
           ),
           const SizedBox(height: 16),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.secondaryTextColor.resolveFrom(context),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.textScalerOf(context).scale(13) * 2.5,
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.2,
+                color: AppTheme.secondaryTextColor.resolveFrom(context),
+              ),
             ),
           ),
           const SizedBox(height: 6),

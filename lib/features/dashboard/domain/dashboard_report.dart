@@ -3,7 +3,7 @@ import 'package:decimal/decimal.dart';
 import '../../../core/utils/financial_math.dart';
 import '../../ingredients/domain/price_history.dart';
 import '../../products/domain/product_financials.dart';
-import '../../transactions/data/finance_repository.dart';
+import '../../transactions/domain/finance_snapshot.dart';
 import '../../transactions/domain/statement_filter.dart';
 
 enum DashboardPeriod { today, week, month, previousMonth, custom }
@@ -101,7 +101,9 @@ class DashboardReport {
     for (final entry in filtered) {
       final amount = FinancialMath.cents(entry['amount']);
       if (entry['status'] == 'pendente') {
-        if (entry['type'] == 'saida') pendingPayables += amount;
+        if (entry['type'] == 'saida') {
+          pendingPayables += amount;
+        }
         continue;
       }
       hasPayments = true;
@@ -113,8 +115,9 @@ class DashboardReport {
         final category = entry['category_id'] as String;
         categoryAmounts[category] = (categoryAmounts[category] ?? 0) + amount;
         final supplier = entry['supplier_id'] as String?;
-        if (supplier != null)
+        if (supplier != null) {
           supplierAmounts[supplier] = (supplierAmounts[supplier] ?? 0) + amount;
+        }
       }
     }
     buckets = grouped.values.toList();
@@ -158,8 +161,9 @@ class DashboardReport {
         history.where((row) => !DateTime.parse(row['date']).isAfter(range.end)),
       );
       if (ordered.length < 2 ||
-          !range.contains(DateTime.parse(ordered.last['date'])))
+          !range.contains(DateTime.parse(ordered.last['date']))) {
         continue;
+      }
       final previous = Decimal.parse(
         ordered[ordered.length - 2]['unit_price'].toString(),
       );
@@ -224,13 +228,17 @@ abstract final class DashboardHistory {
           second[dateKey].toString(),
         );
         if (date != 0) return date;
-        if (first['revision'] != null && second['revision'] != null)
+        if (first['revision'] != null && second['revision'] != null) {
           return (first['revision'] as num).compareTo(
             second['revision'] as num,
           );
-        return first['created_at'].toString().compareTo(
+        }
+        final created = first['created_at'].toString().compareTo(
           second['created_at'].toString(),
         );
+        return created != 0
+            ? created
+            : first['id'].toString().compareTo(second['id'].toString());
       });
     DataRow? baseline;
     final points = <DateTime, Decimal?>{};
@@ -242,8 +250,9 @@ abstract final class DashboardHistory {
         points[date] = decimalOrNull(row[valueKey]);
       }
     }
-    if (baseline != null && !points.containsKey(range.start))
+    if (baseline != null && !points.containsKey(range.start)) {
       points[range.start] = decimalOrNull(baseline[valueKey]);
+    }
     final dates = points.keys.toList()..sort();
     return [for (final date in dates) ChartPoint(date, points[date])];
   }

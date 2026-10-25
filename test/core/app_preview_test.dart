@@ -9,8 +9,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocochovisk/app.dart';
 import 'package:mocochovisk/features/auth/domain/auth_repository.dart';
 import 'package:mocochovisk/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:mocochovisk/features/transactions/data/finance_repository.dart';
+import 'package:mocochovisk/core/router/app_router.dart';
+import 'package:mocochovisk/features/products/presentation/pages/product_detail_page.dart';
 
 import '../features/auth/fake_auth_repository.dart';
+import '../features/products/finance_fixture.dart';
 
 void main() {
   testWidgets('capture app previews for visual review', (tester) async {
@@ -31,7 +35,10 @@ void main() {
 
     final repository = FakeAuthRepository();
     final container = ProviderContainer(
-      overrides: [authRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        financeRepositoryProvider.overrideWithValue(financeFixture()),
+      ],
     );
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -74,5 +81,18 @@ void main() {
       const AuthSession(email: 'dono@bar.example', isAuthenticated: true),
     );
     await capture('home-dark');
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await capture('home-light');
+    container.read(appRouterProvider).go('/produtos');
+    await capture('products-light');
+    await tester.tap(find.text('Caipirinha'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProductDetailPage), findsOneWidget);
+    await capture('product-detail-light');
+    container.read(appRouterProvider).go('/inicio');
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Entradas × saídas'));
+    await capture('dashboard-charts-dark');
   }, skip: !const bool.fromEnvironment('CAPTURE_PREVIEWS'));
 }
