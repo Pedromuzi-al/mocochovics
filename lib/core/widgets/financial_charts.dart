@@ -1,3 +1,5 @@
+import 'app_interaction.dart';
+
 import 'dart:math' as math;
 
 import 'package:decimal/decimal.dart';
@@ -7,14 +9,14 @@ import 'package:flutter/cupertino.dart';
 import '../../features/dashboard/domain/dashboard_report.dart';
 import '../../features/products/domain/product_financials.dart';
 import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
+import '../../features/transactions/domain/statement_filter.dart';
 import '../utils/br_formatters.dart';
 import 'finance_widgets.dart';
 import 'premium_finance.dart';
 
 Duration _duration(BuildContext context) =>
-    MediaQuery.disableAnimationsOf(context)
-    ? Duration.zero
-    : const Duration(milliseconds: 220);
+    AppMotion.duration(context, AppMotion.chart);
 TextStyle _caption(BuildContext context) => TextStyle(
   fontSize: 11,
   color: AppTheme.secondaryTextColor.resolveFrom(context),
@@ -33,7 +35,7 @@ class FinancialDataButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'Valores de $title',
-    child: CupertinoButton(
+    child: AppButton(
       padding: const EdgeInsets.symmetric(vertical: 8),
       alignment: Alignment.centerLeft,
       onPressed: () => openFinancePage<void>(
@@ -488,7 +490,7 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
           ),
         ),
         for (var index = 0; index < widget.categories.length; index++)
-          CupertinoButton(
+          AppButton(
             padding: const EdgeInsets.symmetric(vertical: 4),
             onPressed: () =>
                 setState(() => _selectedId = widget.categories[index].id),
@@ -530,6 +532,123 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
               (
                 label: category.label,
                 value: BrFormatters.currencyFromCents(category.cents),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class ProductMarginsChart extends StatelessWidget {
+  const ProductMarginsChart({required this.products, super.key});
+  final List<DataRow> products;
+  @override
+  Widget build(BuildContext context) {
+    final visible = products.take(5).toList();
+    if (visible.isEmpty) {
+      return const FinanceEmptyState(
+        message: 'Complete as fichas técnicas para acompanhar as margens.',
+      );
+    }
+    final financials = visible.map(ProductFinancials.fromDatabase).toList();
+    final margins = financials
+        .map((item) => item.marginPercent!.toDouble())
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Margem sobre a venda (%)', style: _caption(context)),
+        const SizedBox(height: 16),
+        Semantics(
+          label: visible
+              .asMap()
+              .entries
+              .map(
+                (entry) =>
+                    '${entry.value['name']}: ${localizedDecimal(financials[entry.key].marginPercent!)}%',
+              )
+              .join('; '),
+          child: SizedBox(
+            height: 180,
+            child: BarChart(
+              BarChartData(
+                minY: math.min(0, margins.reduce(math.min)),
+                maxY: math.max(100, margins.reduce(math.max)),
+                borderData: FlBorderData(show: false),
+                gridData: const FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 24,
+                      getTitlesWidget: (value, meta) => Text(
+                        '${value.toInt() + 1}',
+                        style: _caption(context),
+                      ),
+                    ),
+                  ),
+                ),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    getTooltipItem: (group, index, rod, rodIndex) => BarTooltipItem(
+                      '${visible[index]['name']}\n${localizedDecimal(financials[index].marginPercent!)}%',
+                      const TextStyle(
+                        color: CupertinoColors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                barGroups: [
+                  for (var i = 0; i < visible.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: margins[i],
+                          width: 24,
+                          color:
+                              (financials[i].lowMargin
+                                      ? FinancePalette.warning
+                                      : FinancePalette.income)
+                                  .resolveFrom(context),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              duration: _duration(context),
+            ),
+          ),
+        ),
+        for (var i = 0; i < visible.length; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Text(
+              '${i + 1}. ${visible[i]['name']}',
+              style: _caption(context),
+            ),
+          ),
+        FinancialDataButton(
+          title: 'Margens dos produtos',
+          entries: [
+            for (var i = 0; i < visible.length; i++)
+              (
+                label: visible[i]['name'].toString(),
+                value: '${localizedDecimal(financials[i].marginPercent!)}%',
               ),
           ],
         ),

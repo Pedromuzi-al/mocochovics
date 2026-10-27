@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +8,8 @@ import '../../../../core/utils/br_formatters.dart';
 import '../../../../core/utils/financial_math.dart';
 import '../../../../core/widgets/finance_record_tile.dart';
 import '../../../../core/widgets/finance_widgets.dart';
+import '../../../../core/widgets/premium_finance.dart';
+import '../../../statement/presentation/pages/statement_page.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../../ingredients/domain/price_history.dart';
 
@@ -17,11 +21,18 @@ class SuppliersPage extends ConsumerStatefulWidget {
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   String _search = '';
+  final _searchController = TextEditingController();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   String _status = 'todos';
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Fornecedores',
-    trailing: CupertinoButton(
+    trailing: AppButton(
       padding: EdgeInsets.zero,
       onPressed: () => editSupplier(context, ref),
       child: const Icon(CupertinoIcons.add, semanticLabel: 'Novo fornecedor'),
@@ -46,50 +57,82 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       return [
         SliverToBoxAdapter(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CupertinoSearchTextField(
-                placeholder: 'Buscar fornecedor',
-                onChanged: (value) => setState(() => _search = value),
+              AppHover(
+                child: CupertinoSearchTextField(
+                  placeholder: 'Buscar fornecedor',
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _search = value),
+                ),
               ),
               const SizedBox(height: 16),
-              CupertinoSlidingSegmentedControl<String>(
-                groupValue: _status,
-                children: const {
-                  'todos': Text('Todos'),
-                  'ativos': Text('Ativos'),
-                  'inativos': Text('Inativos'),
-                },
-                onValueChanged: (value) {
-                  if (value != null) setState(() => _status = value);
-                },
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppHover(
+                  child: CupertinoSlidingSegmentedControl<String>(
+                    groupValue: _status,
+                    children: const {
+                      'todos': Text('Todos'),
+                      'ativos': Text('Ativos'),
+                      'inativos': Text('Inativos'),
+                    },
+                    onValueChanged: (value) {
+                      if (value != null) setState(() => _status = value);
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              FinanceSection(
-                children: [
-                  for (final supplier in suppliers)
-                    FinanceRecordTile(
-                      id: supplier['id'],
-                      title: supplier['name'],
-                      subtitle: supplier['active'] == true
-                          ? 'Ativo'
-                          : 'Inativo',
-                      onEdit: () => editSupplier(context, ref, supplier),
-                      onDelete: () => deleteRecord(
-                        context,
-                        ref,
-                        'suppliers',
-                        supplier['id'],
-                      ),
-                      onTap: () => openFinancePage<void>(
-                        context,
-                        SupplierDetailPage(id: supplier['id']),
-                      ),
-                    ),
-                ],
-              ),
+              if (suppliers.isEmpty)
+                AppStateView(
+                  title: snapshot.rows('suppliers').isEmpty
+                      ? 'Seus fornecedores aparecerão aqui'
+                      : 'Nenhum fornecedor encontrado',
+                  message: snapshot.rows('suppliers').isEmpty
+                      ? 'Organize contatos, acompanhe preços e veja quanto você compra de cada fornecedor.'
+                      : 'Altere a busca ou o status para encontrar seus fornecedores.',
+                  icon: CupertinoIcons.person_2,
+                  actionLabel: snapshot.rows('suppliers').isEmpty
+                      ? 'Cadastrar fornecedor'
+                      : 'Limpar filtros',
+                  onAction: snapshot.rows('suppliers').isEmpty
+                      ? () => editSupplier(context, ref)
+                      : () => setState(() {
+                          _search = '';
+                          _status = 'todos';
+                          _searchController.clear();
+                        }),
+                ),
             ],
           ),
         ),
+        if (suppliers.isNotEmpty)
+          FinanceSliverList(
+            ids: suppliers.map((row) => row['id'] as String).toList(),
+            itemBuilder: (context, index) {
+              final supplier = suppliers[index];
+              return FinanceRecordTile(
+                id: supplier['id'],
+                title: supplier['name'],
+                key: ValueKey(supplier['id']),
+                actionsInMenu: true,
+                leading: Icon(
+                  CupertinoIcons.person_crop_circle,
+                  color: CupertinoTheme.of(context).primaryColor,
+                ),
+                subtitle:
+                    '${supplier['active'] == true ? 'Ativo' : 'Inativo'}${(supplier['phone'] ?? supplier['email'] ?? '').toString().isEmpty ? '' : ' · ${supplier['phone'] ?? supplier['email']}'}',
+                onEdit: () => editSupplier(context, ref, supplier),
+                onDelete: () =>
+                    deleteRecord(context, ref, 'suppliers', supplier['id']),
+                onTap: () => openFinancePage<void>(
+                  context,
+                  SupplierDetailPage(id: supplier['id']),
+                ),
+              );
+            },
+          ),
       ];
     },
   );
@@ -201,7 +244,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                     'payment_term_days': 'Prazo (dias)',
                     'notes': 'Observações',
                   }.entries)
-                    CupertinoListTile(
+                    AppListTile(
                       title: Text(field.value),
                       subtitle: Text(
                         (supplier[field.key] ?? 'Não informado').toString(),
@@ -211,12 +254,12 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                   if (phone.isNotEmpty)
                     Wrap(
                       children: [
-                        CupertinoButton(
+                        AppButton(
                           onPressed: () =>
                               _launch(Uri(scheme: 'tel', path: phone)),
                           child: const Text('Ligar'),
                         ),
-                        CupertinoButton(
+                        AppButton(
                           onPressed: () => _launch(
                             Uri.https(
                               'wa.me',
@@ -227,7 +270,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                         ),
                       ],
                     ),
-                  CupertinoButton(
+                  AppButton(
                     onPressed: () => editSupplier(context, ref, supplier),
                     child: const Text('Editar fornecedor'),
                   ),
@@ -236,7 +279,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
               FinanceSection(
                 title: 'Gastos pagos no período',
                 children: [
-                  CupertinoListTile(
+                  AppListTile(
                     title: const Text('De'),
                     additionalInfo: Text(BrFormatters.date(_start)),
                     onTap: () async {
@@ -249,7 +292,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                       }
                     },
                   ),
-                  CupertinoListTile(
+                  AppListTile(
                     title: const Text('Até'),
                     additionalInfo: Text(BrFormatters.date(_end)),
                     onTap: () async {
@@ -262,7 +305,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                       }
                     },
                   ),
-                  CupertinoListTile(
+                  AppListTile(
                     title: Text(BrFormatters.currencyFromCents(spent)),
                   ),
                 ],
@@ -271,12 +314,12 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                 title: 'Preços atuais por ingrediente',
                 children: [
                   for (final price in prices)
-                    CupertinoListTile(
+                    AppListTile(
                       title: Text(
                         snapshot.name('ingredients', price['ingredient_id']),
                       ),
                       subtitle: Text(
-                        'R\$ ${price['unit_price']} por unidade base · ${BrFormatters.date(DateTime.parse(price['date']))}',
+                        'R\$ ${price['unit_price'].toString().replaceAll('.', ',')}/${snapshot.rows('ingredients').where((row) => row['id'] == price['ingredient_id']).firstOrNull?['base_unit'] ?? 'un'} · ${BrFormatters.date(DateTime.parse(price['date']))}',
                       ),
                       additionalInfo: Text(
                         BrFormatters.currencyFromCents(
@@ -286,8 +329,108 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                     ),
                 ],
               ),
+              FinanceSection(
+                title: 'Compras e preços anteriores',
+                children: [
+                  AppListTile(
+                    title: const Text('Histórico de preços'),
+                    subtitle: const Text('Compras e cotações por ingrediente'),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () => openFinancePage<void>(
+                      context,
+                      SupplierPriceHistoryPage(id: widget.id),
+                    ),
+                  ),
+                  AppListTile(
+                    title: const Text('Lançamentos do período'),
+                    subtitle: const Text(
+                      'Saídas pagas vinculadas a este fornecedor',
+                    ),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () => openFinancePage<void>(
+                      context,
+                      StatementPage(
+                        initialFilter: StatementFilter(
+                          start: _start,
+                          end: DateTime(_end.year, _end.month, _end.day),
+                          supplierId: widget.id,
+                          type: 'saida',
+                          status: 'pago',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
+        ),
+      ];
+    },
+  );
+}
+
+class SupplierPriceHistoryPage extends ConsumerWidget {
+  const SupplierPriceHistoryPage({required this.id, super.key});
+  final String id;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => FinanceBody(
+    title: 'Histórico do fornecedor',
+    builder: (snapshot) {
+      final prices = PriceHistory.chronological(
+        snapshot
+            .rows('ingredient_prices')
+            .where((row) => row['supplier_id'] == id),
+      ).reversed.toList();
+      if (prices.isEmpty) {
+        return [
+          const SliverToBoxAdapter(
+            child: AppStateView(
+              title: 'Nenhum preço registrado',
+              message:
+                  'As compras e cotações deste fornecedor aparecerão aqui.',
+              icon: CupertinoIcons.clock,
+            ),
+          ),
+        ];
+      }
+      return [
+        SliverList.builder(
+          itemCount: prices.length,
+          itemBuilder: (context, index) {
+            final price = prices[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: FinanceSection(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LabeledAmount(
+                          label: snapshot.name(
+                            'ingredients',
+                            price['ingredient_id'],
+                          ),
+                          amount: BrFormatters.currencyFromCents(
+                            FinancialMath.cents(price['price']),
+                          ),
+                        ),
+                        Text(
+                          '${BrFormatters.date(DateTime.parse(price['date']))} · ${price['kind'] == 'purchase' ? 'Compra' : 'Cotação'} · ${price['package_size']} ${price['package_unit']}',
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Preço por unidade base: R\$ ${price['unit_price'].toString().replaceAll('.', ',')}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ];
     },

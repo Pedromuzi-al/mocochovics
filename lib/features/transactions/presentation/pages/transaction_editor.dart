@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -223,7 +225,7 @@ class _TransactionEditorState extends ConsumerState<TransactionEditor> {
               'A cotação desta compra está preservada no histórico. Alterações financeiras não alteram o preço registrado.',
             ),
           if (_receiptName != null) Text(_receiptName!),
-          CupertinoButton(
+          AppButton(
             onPressed: _picking ? null : _pickReceipt,
             child: Text(
               _picking ? 'Selecionando…' : 'Anexar comprovante (até 10 MB)',
@@ -231,7 +233,7 @@ class _TransactionEditorState extends ConsumerState<TransactionEditor> {
           ),
           if (_receipt != null ||
               (widget.initial?['receipt_path'] != null && !_removeReceipt))
-            CupertinoButton(
+            AppButton(
               onPressed: () => setState(() {
                 _receipt = null;
                 _receiptName = null;
@@ -341,7 +343,7 @@ class TransactionDetailPage extends ConsumerWidget {
         SliverToBoxAdapter(
           child: FinanceSection(
             children: [
-              CupertinoListTile(
+              AppListTile(
                 title: Text(
                   BrFormatters.currencyFromCents(
                     FinancialMath.cents(entry['amount']),
@@ -354,7 +356,7 @@ class TransactionDetailPage extends ConsumerWidget {
                 'status': 'Status',
                 'payment_method': 'Pagamento',
               }.entries)
-                CupertinoListTile(
+                AppListTile(
                   title: Text(field.value),
                   subtitle: Text(
                     (transactionTypes[entry[field.key]] ??
@@ -365,29 +367,29 @@ class TransactionDetailPage extends ConsumerWidget {
                     maxLines: 8,
                   ),
                 ),
-              CupertinoListTile(
+              AppListTile(
                 title: const Text('Data'),
                 subtitle: Text(
                   BrFormatters.date(DateTime.parse(entry['date'])),
                 ),
               ),
-              CupertinoListTile(
+              AppListTile(
                 title: const Text('Categoria'),
                 subtitle: Text(
                   snapshot.name('transaction_categories', entry['category_id']),
                 ),
               ),
               if (entry['supplier_id'] != null)
-                CupertinoListTile(
+                AppListTile(
                   title: const Text('Fornecedor'),
                   subtitle: Text(
                     snapshot.name('suppliers', entry['supplier_id']),
                   ),
                 ),
               if (entry['recurring_id'] != null)
-                const CupertinoListTile(title: Text('Gerado por recorrência')),
+                const AppListTile(title: Text('Gerado por recorrência')),
               if (entry['receipt_path'] != null)
-                CupertinoButton(
+                AppButton(
                   onPressed: () async {
                     try {
                       final url = await ref
@@ -409,11 +411,11 @@ class TransactionDetailPage extends ConsumerWidget {
                   },
                   child: const Text('Abrir comprovante'),
                 ),
-              CupertinoButton(
+              AppButton(
                 onPressed: () => editTransaction(context, ref, snapshot, entry),
                 child: const Text('Editar lançamento'),
               ),
-              CupertinoButton(
+              AppButton(
                 onPressed: () => deleteRecord(context, ref, 'transactions', id),
                 child: const Text('Excluir lançamento'),
               ),

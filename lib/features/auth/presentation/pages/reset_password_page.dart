@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -56,7 +58,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AuthMessage(controller.errorMessage, isError: true),
-                  CupertinoButton.filled(
+                  AppButton.filled(
                     onPressed: () {
                       controller.clearError();
                       context.go('/forgot-password');
@@ -106,7 +108,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                         onPressed: _submit,
                       ),
                       const SizedBox(height: 12),
-                      CupertinoButton(
+                      AppButton(
                         onPressed: controller.isBusy
                             ? null
                             : () => controller.signOut(),

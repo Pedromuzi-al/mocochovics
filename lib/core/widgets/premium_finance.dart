@@ -1,6 +1,10 @@
+import 'app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
+import 'app_motion.dart';
 
 abstract final class FinancePalette {
   static const income = CupertinoDynamicColor.withBrightness(
@@ -34,20 +38,24 @@ class PremiumSurface extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
-        context,
+  Widget build(BuildContext context) => AppHover(
+    lift: true,
+    radius: 24,
+    child: Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+          context,
+        ),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(
+          color: CupertinoColors.separator
+              .resolveFrom(context)
+              .withValues(alpha: 0.12),
+        ),
       ),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: CupertinoColors.separator
-            .resolveFrom(context)
-            .withValues(alpha: 0.12),
-      ),
+      child: child,
     ),
-    child: child,
   );
 }
 
@@ -68,14 +76,7 @@ class SectionHeading extends StatelessWidget {
             Expanded(
               child: Semantics(
                 header: true,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                  ),
-                ),
+                child: Text(title, style: AppType.section),
               ),
             ),
             ?action,
@@ -106,6 +107,8 @@ class FinanceMetricCard extends StatelessWidget {
     required this.accent,
     this.note,
     this.onTap,
+    this.cents,
+    this.order = 0,
     super.key,
   });
   final String label, value;
@@ -113,78 +116,93 @@ class FinanceMetricCard extends StatelessWidget {
   final CupertinoDynamicColor accent;
   final String? note;
   final VoidCallback? onTap;
+  final int? cents;
+  final int order;
   @override
   Widget build(BuildContext context) {
     final color = accent.resolveFrom(context);
-    final card = PremiumSurface(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 21),
-          ),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.textScalerOf(context).scale(13) * 2.5,
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.2,
-                color: AppTheme.secondaryTextColor.resolveFrom(context),
+    final card = SizedBox(
+      width: double.infinity,
+      child: PremiumSurface(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Icon(icon, color: color, size: 21),
             ),
-          ),
-          const SizedBox(height: 6),
-          AnimatedSwitcher(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            child: Text(
-              value,
-              key: ValueKey(value),
-              style: AppTheme.tabularFigures(
-                TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.7,
-                  color: color,
-                ),
+            const SizedBox(height: 16),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.textScalerOf(context).scale(13) * 2.5,
               ),
-            ),
-          ),
-          if (note != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
               child: Text(
-                note!,
+                label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
+                  height: 1.2,
                   color: AppTheme.secondaryTextColor.resolveFrom(context),
                 ),
               ),
             ),
-        ],
+            const SizedBox(height: 6),
+            if (cents != null)
+              AnimatedMoney(
+                cents: cents!,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.7,
+                  color: color,
+                ),
+              )
+            else
+              Text(
+                value,
+                style: AppTheme.tabularFigures(
+                  TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            if (note != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  note!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.secondaryTextColor.resolveFrom(context),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
-    return onTap == null
-        ? card
-        : CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: onTap,
-            child: DefaultTextStyle(
-              style: CupertinoTheme.of(context).textTheme.textStyle,
-              child: card,
+    return AppReveal(
+      order: order,
+      child: onTap == null
+          ? card
+          : AppButton(
+              // The surface supplies hover; retain Cupertino keyboard focus.
+              hoverFeedback: false,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              padding: EdgeInsets.zero,
+              onPressed: onTap,
+              child: DefaultTextStyle(
+                style: CupertinoTheme.of(context).textTheme.textStyle,
+                child: card,
+              ),
             ),
-          );
+    );
   }
 }
 
@@ -305,6 +323,33 @@ class LabeledAmount extends StatelessWidget {
                   Flexible(child: amountWidget),
                 ],
               ),
+      );
+    },
+  );
+}
+
+class ResponsivePanels extends StatelessWidget {
+  const ResponsivePanels({required this.children, super.key});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns =
+          constraints.maxWidth >= 900 &&
+              MediaQuery.textScalerOf(context).scale(14) < 20
+          ? 2
+          : 1;
+      final width = (constraints.maxWidth - 24 * (columns - 1)) / columns;
+      return Wrap(
+        spacing: 24,
+        runSpacing: 24,
+        children: [
+          for (var i = 0; i < children.length; i++)
+            SizedBox(
+              width: width,
+              child: AppReveal(order: i % 3, child: children[i]),
+            ),
+        ],
       );
     },
   );

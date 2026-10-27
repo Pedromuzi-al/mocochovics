@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +59,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ? 'Se o cadastro puder ser concluído, você receberá um link para confirmar seu e-mail. Confira também a caixa de spam.'
             : 'Organize as contas do bar em um só lugar.',
         child: _confirmationSent
-            ? CupertinoButton.filled(
+            ? AppButton.filled(
                 onPressed: () => context.go('/login'),
                 child: const Text(
                   'Voltar para entrar',

@@ -1,5 +1,6 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:decimal/decimal.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,8 @@ import '../../../../core/utils/br_formatters.dart';
 import '../../../../core/utils/financial_math.dart';
 import '../../../../core/widgets/finance_record_tile.dart';
 import '../../../../core/widgets/finance_widgets.dart';
+import '../../../../core/widgets/financial_charts.dart';
+import '../../../dashboard/domain/dashboard_report.dart';
 import '../../../transactions/data/finance_repository.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/price_history.dart';
@@ -28,10 +31,17 @@ class IngredientsPage extends ConsumerStatefulWidget {
 
 class _IngredientsPageState extends ConsumerState<IngredientsPage> {
   String _search = '';
+  final _searchController = TextEditingController();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Ingredientes',
-    trailing: CupertinoButton(
+    trailing: AppButton(
       padding: EdgeInsets.zero,
       onPressed: () => editIngredient(context, ref),
       child: const Icon(CupertinoIcons.add, semanticLabel: 'Novo ingrediente'),
@@ -54,36 +64,58 @@ class _IngredientsPageState extends ConsumerState<IngredientsPage> {
         SliverToBoxAdapter(
           child: Column(
             children: [
-              CupertinoSearchTextField(
-                placeholder: 'Buscar ingrediente',
-                onChanged: (value) => setState(() => _search = value),
+              AppHover(
+                child: CupertinoSearchTextField(
+                  placeholder: 'Buscar ingrediente',
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _search = value),
+                ),
               ),
               const SizedBox(height: 16),
-              FinanceSection(
-                children: [
-                  for (final ingredient in ingredients)
-                    FinanceRecordTile(
-                      id: ingredient['id'],
-                      title: ingredient['name'],
-                      subtitle:
-                          '${ingredientCategories[ingredient['category']]} · ${ingredient['base_unit']}',
-                      onEdit: () => editIngredient(context, ref, ingredient),
-                      onDelete: () => deleteRecord(
-                        context,
-                        ref,
-                        'ingredients',
-                        ingredient['id'],
-                      ),
-                      onTap: () => openFinancePage<void>(
-                        context,
-                        IngredientDetailPage(id: ingredient['id']),
-                      ),
-                    ),
-                ],
-              ),
+              if (ingredients.isEmpty)
+                AppStateView(
+                  title: snapshot.rows('ingredients').isEmpty
+                      ? 'Os ingredientes começam por aqui'
+                      : 'Nenhum ingrediente encontrado',
+                  message: snapshot.rows('ingredients').isEmpty
+                      ? 'Cadastre os insumos do bar para comparar fornecedores e calcular os custos das fichas técnicas.'
+                      : 'Tente outro nome para encontrar o ingrediente.',
+                  icon: CupertinoIcons.leaf_arrow_circlepath,
+                  actionLabel: snapshot.rows('ingredients').isEmpty
+                      ? 'Cadastrar ingrediente'
+                      : 'Limpar busca',
+                  onAction: snapshot.rows('ingredients').isEmpty
+                      ? () => editIngredient(context, ref)
+                      : () => setState(() {
+                          _search = '';
+                          _searchController.clear();
+                        }),
+                ),
             ],
           ),
         ),
+        if (ingredients.isNotEmpty)
+          FinanceSliverList(
+            ids: ingredients.map((row) => row['id'] as String).toList(),
+            itemBuilder: (context, index) {
+              final ingredient = ingredients[index];
+              return FinanceRecordTile(
+                key: ValueKey(ingredient['id']),
+                actionsInMenu: true,
+                id: ingredient['id'],
+                title: ingredient['name'],
+                subtitle:
+                    '${ingredientCategories[ingredient['category']]} · ${ingredient['base_unit']}',
+                onEdit: () => editIngredient(context, ref, ingredient),
+                onDelete: () =>
+                    deleteRecord(context, ref, 'ingredients', ingredient['id']),
+                onTap: () => openFinancePage<void>(
+                  context,
+                  IngredientDetailPage(id: ingredient['id']),
+                ),
+              );
+            },
+          ),
       ];
     },
   );
@@ -163,7 +195,7 @@ class IngredientDetailPage extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              CupertinoButton.filled(
+              AppButton.filled(
                 onPressed: () => _quote(context, ref, snapshot, ingredient),
                 child: const Text('Nova cotação / compra'),
               ),
@@ -238,7 +270,7 @@ class IngredientDetailPage extends ConsumerWidget {
                 title: 'Histórico (mais recente primeiro)',
                 children: [
                   for (final price in prices.reversed)
-                    CupertinoListTile(
+                    AppListTile(
                       title: Text(
                         snapshot.name('suppliers', price['supplier_id']),
                       ),
@@ -354,77 +386,23 @@ class PriceEvolution extends StatelessWidget {
   final List<DataRow> prices;
   final FinanceSnapshot snapshot;
   final String baseUnit;
-  static const _colors = [
-    CupertinoColors.systemBlue,
-    CupertinoColors.systemOrange,
-    CupertinoColors.systemGreen,
-    CupertinoColors.systemPurple,
-    CupertinoColors.systemRed,
-  ];
   @override
   Widget build(BuildContext context) {
-    final suppliers = prices
-        .map((row) => row['supplier_id'] as String)
-        .toSet()
-        .toList();
-    final dates = prices.map((row) => row['date'].toString()).toSet().toList()
-      ..sort();
-    return Semantics(
-      label:
-          'Evolução do preço em reais por $baseUnit. Valores detalhados no histórico abaixo.',
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Evolução de ${BrFormatters.date(DateTime.parse(dates.first))} a ${BrFormatters.date(DateTime.parse(dates.last))}',
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 220,
-              child: LineChart(
-                LineChartData(
-                  minX: 0,
-                  maxX: dates.length > 1 ? (dates.length - 1).toDouble() : 1,
-                  titlesData: const FlTitlesData(show: false),
-                  lineBarsData: [
-                    for (var index = 0; index < suppliers.length; index++)
-                      LineChartBarData(
-                        color: _colors[index % _colors.length].resolveFrom(
-                          context,
-                        ),
-                        spots: [
-                          for (final price in prices.where(
-                            (row) => row['supplier_id'] == suppliers[index],
-                          ))
-                            FlSpot(
-                              dates.indexOf(price['date']).toDouble(),
-                              double.parse(price['unit_price'].toString()),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
+    final suppliers = prices.map((row) => row['supplier_id'] as String).toSet();
+    return FinancialLineChart(
+      unit: baseUnit,
+      series: [
+        for (final supplier in suppliers)
+          ValueSeries(snapshot.name('suppliers', supplier), [
+            for (final price in PriceHistory.chronological(
+              prices.where((row) => row['supplier_id'] == supplier),
+            ))
+              ChartPoint(
+                DateTime.parse(price['date']),
+                Decimal.parse(price['unit_price'].toString()),
               ),
-            ),
-            Wrap(
-              spacing: 14,
-              children: [
-                for (var index = 0; index < suppliers.length; index++)
-                  Text(
-                    snapshot.name('suppliers', suppliers[index]),
-                    style: TextStyle(
-                      color: _colors[index % _colors.length].resolveFrom(
-                        context,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ]),
+      ],
     );
   }
 }

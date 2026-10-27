@@ -1,9 +1,10 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/finance_widgets.dart';
-import '../../../../core/widgets/premium_finance.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/product_financials.dart';
 import '../widgets/product_record_tile.dart';
@@ -26,6 +27,13 @@ class ProductsPage extends ConsumerStatefulWidget {
 
 class _ProductsPageState extends ConsumerState<ProductsPage> {
   String _search = '';
+  final _searchController = TextEditingController();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   late ProductFilter _filter = widget.initialFilter;
 
   Future<void> _selectFilter() async {
@@ -35,14 +43,18 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         title: const Text('Filtrar produtos'),
         actions: [
           for (final entry in _filterLabels.entries)
-            CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context, entry.key),
-              child: Text(entry.value),
+            AppHover(
+              child: CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(context, entry.key),
+                child: Text(entry.value),
+              ),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+        cancelButton: AppHover(
+          child: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
         ),
       ),
     );
@@ -52,7 +64,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Produtos',
-    trailing: CupertinoButton(
+    trailing: AppButton(
       padding: EdgeInsets.zero,
       onPressed: () => editProduct(context, ref),
       child: const Icon(CupertinoIcons.add, semanticLabel: 'Novo produto'),
@@ -88,30 +100,37 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CupertinoSearchTextField(
-                placeholder: 'Buscar produto ou categoria',
-                onChanged: (value) => setState(() => _search = value),
+              AppHover(
+                child: CupertinoSearchTextField(
+                  placeholder: 'Buscar produto ou categoria',
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _search = value),
+                ),
               ),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
                 child: MediaQuery.textScalerOf(context).scale(14) > 20
-                    ? CupertinoButton(
+                    ? AppButton(
                         onPressed: _selectFilter,
                         child: Text('Filtro: ${_filterLabels[_filter]}'),
                       )
-                    : CupertinoSlidingSegmentedControl<ProductFilter>(
-                        groupValue: _filter,
-                        children: {
-                          for (final entry in _filterLabels.entries)
-                            entry.key: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(entry.value),
-                            ),
-                        },
-                        onValueChanged: (value) {
-                          if (value != null) setState(() => _filter = value);
-                        },
+                    : AppHover(
+                        child: CupertinoSlidingSegmentedControl<ProductFilter>(
+                          groupValue: _filter,
+                          children: {
+                            for (final entry in _filterLabels.entries)
+                              entry.key: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Text(entry.value),
+                              ),
+                          },
+                          onValueChanged: (value) {
+                            if (value != null) setState(() => _filter = value);
+                          },
+                        ),
                       ),
               ),
               const SizedBox(height: 16),
@@ -121,20 +140,26 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ),
               const SizedBox(height: 16),
               if (products.isEmpty)
-                Column(
-                  children: [
-                    FinanceEmptyState(
-                      icon: CupertinoIcons.cube_box,
-                      message: snapshot.rows('products').isEmpty
-                          ? 'Cadastre seu primeiro produto e monte a ficha técnica para conhecer seus custos.'
-                          : 'Nenhum produto corresponde à busca e ao filtro.',
-                    ),
-                    if (snapshot.rows('products').isEmpty)
-                      CupertinoButton.filled(
-                        onPressed: () => editProduct(context, ref),
-                        child: const Text('Cadastrar produto'),
-                      ),
-                  ],
+                AppStateView(
+                  icon: snapshot.rows('products').isEmpty
+                      ? CupertinoIcons.cube_box
+                      : CupertinoIcons.search,
+                  title: snapshot.rows('products').isEmpty
+                      ? 'Comece cadastrando seus produtos'
+                      : 'Nenhum produto encontrado',
+                  message: snapshot.rows('products').isEmpty
+                      ? 'Monte a ficha técnica de cada produto para calcular automaticamente os custos e acompanhar suas margens.'
+                      : 'Nenhum produto corresponde à busca e ao filtro.',
+                  actionLabel: snapshot.rows('products').isEmpty
+                      ? 'Cadastrar produto'
+                      : 'Limpar filtros',
+                  onAction: snapshot.rows('products').isEmpty
+                      ? () => editProduct(context, ref)
+                      : () => setState(() {
+                          _filter = ProductFilter.all;
+                          _search = '';
+                          _searchController.clear();
+                        }),
                 )
               else ...[
                 Padding(
@@ -147,30 +172,29 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     ),
                   ),
                 ),
-                FinanceSection(
-                  children: [
-                    for (final product in products)
-                      ProductRecordTile(
-                        product: product,
-                        financials: metrics[product['id']],
-                        onTap: () => openFinancePage<void>(
-                          context,
-                          ProductDetailPage(id: product['id']),
-                        ),
-                        onEdit: () => editProduct(context, ref, product),
-                        onDelete: () => deleteRecord(
-                          context,
-                          ref,
-                          'products',
-                          product['id'],
-                        ),
-                      ),
-                  ],
-                ),
               ],
             ],
           ),
         ),
+        if (products.isNotEmpty)
+          FinanceSliverList(
+            ids: products.map((row) => row['id'] as String).toList(),
+            itemBuilder: (context, index) {
+              final product = products[index];
+              return ProductRecordTile(
+                key: ValueKey(product['id']),
+                product: product,
+                financials: metrics[product['id']],
+                onTap: () => openFinancePage<void>(
+                  context,
+                  ProductDetailPage(id: product['id']),
+                ),
+                onEdit: () => editProduct(context, ref, product),
+                onDelete: () =>
+                    deleteRecord(context, ref, 'products', product['id']),
+              );
+            },
+          ),
       ];
     },
   );

@@ -1,3 +1,5 @@
+import '../widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,7 +77,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       child: SafeArea(
         child: Center(
-          child: CupertinoButton(
+          child: AppButton(
             onPressed: () => context.go('/inicio'),
             child: const Text('Voltar ao início'),
           ),

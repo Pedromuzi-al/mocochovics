@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,7 +46,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             ? 'Se houver uma conta com esse e-mail, enviaremos um link para criar uma nova senha. Confira também a caixa de spam e abra o link neste dispositivo.'
             : 'Informe o e-mail da sua conta para receber o link de recuperação.',
         child: _sent
-            ? CupertinoButton.filled(
+            ? AppButton.filled(
                 onPressed: () => context.go('/login'),
                 child: const Text(
                   'Voltar para entrar',

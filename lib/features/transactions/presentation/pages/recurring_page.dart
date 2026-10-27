@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -43,34 +45,43 @@ class RecurringPage extends ConsumerWidget {
             const Text(
               'Ao abrir ou atualizar os dados, os vencimentos até hoje geram lançamentos pendentes. No dia 31, meses menores usam o último dia. A pausa preserva lançamentos existentes.',
             ),
-            CupertinoButton.filled(
+            AppButton.filled(
               onPressed: () => _edit(context, ref, snapshot),
               child: const Text('Nova recorrência'),
             ),
             const SizedBox(height: 16),
-            FinanceSection(
-              children: [
-                for (final rule in snapshot.rows('recurring_transactions'))
-                  FinanceRecordTile(
-                    id: rule['id'],
-                    title: (rule['description'] as String).isEmpty
-                        ? snapshot.name(
-                            'transaction_categories',
-                            rule['category_id'],
-                          )
-                        : rule['description'],
-                    subtitle:
-                        '${BrFormatters.currencyFromCents(FinancialMath.cents(rule['amount']))} · a cada ${rule['interval_months']} mês(es)\nPróxima: ${BrFormatters.date(DateTime.parse(rule['next_date']))} · ${rule['active'] == true ? 'Ativa' : 'Pausada'}',
-                    onEdit: () => _edit(context, ref, snapshot, rule),
-                    onDelete: () => deleteRecord(
-                      context,
-                      ref,
-                      'recurring_transactions',
-                      rule['id'],
+            if (snapshot.rows('recurring_transactions').isEmpty)
+              AppStateView(
+                title: 'Simplifique as contas de todo mês',
+                message: 'Cadastre uma recorrência para gerar lançamentos pendentes sem repetir os mesmos dados.',
+                icon: CupertinoIcons.repeat,
+                actionLabel: 'Cadastrar recorrência',
+                onAction: () => _edit(context, ref, snapshot),
+              )
+            else
+              FinanceSection(
+                children: [
+                  for (final rule in snapshot.rows('recurring_transactions'))
+                    FinanceRecordTile(
+                      id: rule['id'],
+                      title: (rule['description'] as String).isEmpty
+                          ? snapshot.name(
+                              'transaction_categories',
+                              rule['category_id'],
+                            )
+                          : rule['description'],
+                      subtitle:
+                          '${BrFormatters.currencyFromCents(FinancialMath.cents(rule['amount']))} · a cada ${rule['interval_months']} mês(es)\nPróxima: ${BrFormatters.date(DateTime.parse(rule['next_date']))} · ${rule['active'] == true ? 'Ativa' : 'Pausada'}',
+                      onEdit: () => _edit(context, ref, snapshot, rule),
+                      onDelete: () => deleteRecord(
+                        context,
+                        ref,
+                        'recurring_transactions',
+                        rule['id'],
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

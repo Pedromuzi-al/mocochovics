@@ -22,11 +22,6 @@ abstract final class AppTheme {
     darkColor: CupertinoColors.black,
   );
 
-  static const _barBackgroundColor = CupertinoDynamicColor.withBrightness(
-    color: Color(0xEBF2F2F7),
-    darkColor: Color(0xEB000000),
-  );
-
   static CupertinoThemeData build(Brightness brightness) {
     final usesAppleFonts =
         !kIsWeb &&
@@ -43,7 +38,7 @@ abstract final class AppTheme {
       primaryColor: actionColor,
       primaryContrastingColor: _onActionColor,
       scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
-      barBackgroundColor: _barBackgroundColor,
+      barBackgroundColor: CupertinoColors.systemGroupedBackground,
       textTheme: CupertinoTextThemeData(
         primaryColor: actionColor,
         textStyle: platformStyle(defaults.textStyle),

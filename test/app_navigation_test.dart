@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:mocochovisk/core/widgets/app_navigation_menu.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -47,13 +49,14 @@ Future<({FakeAuthRepository repository, GoRouter router})> _pumpApp(
   return (repository: repository, router: container.read(appRouterProvider));
 }
 
-Finder _tab(String label) => find.descendant(
-  of: find.byType(CupertinoTabBar),
-  matching: find.text(label),
-);
-
 Future<void> _tapTab(WidgetTester tester, String label) async {
-  await tester.tap(_tab(label));
+  final target = find.bySemanticsLabel('Abrir $label');
+  if (target.evaluate().isEmpty) {
+    await tester.tap(find.bySemanticsLabel('Abrir menu'));
+    await tester.pumpAndSettle();
+  }
+  await tester.ensureVisible(target);
+  await tester.tap(target);
   await tester.pumpAndSettle();
 }
 
@@ -77,10 +80,12 @@ void main() {
     expect(find.byType(IngredientsPage), findsNothing);
   });
 
-  testWidgets('all five native tabs open their own routes', (tester) async {
+  testWidgets('all five mobile menu destinations open their own routes', (
+    tester,
+  ) async {
     final app = await _pumpApp(tester);
-    final tabs = tester.widget<CupertinoTabBar>(find.byType(CupertinoTabBar));
-    expect(tabs.items, hasLength(5));
+    expect(find.bySemanticsLabel('Abrir menu'), findsOneWidget);
+    expect(find.byType(CupertinoTabBar), findsNothing);
     expect(find.byType(DashboardPage), findsOneWidget);
 
     for (final entry in {
@@ -96,7 +101,79 @@ void main() {
     }
   });
 
-  testWidgets('the five-tab shell fits a narrow screen with enlarged text', (
+  testWidgets('desktop navigation preserves the selected branch when resized', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final app = await _pumpApp(tester);
+    expect(find.byType(CupertinoTabBar), findsNothing);
+    await _tapTab(tester, 'Produtos');
+    expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Abrir menu'), findsOneWidget);
+    expect(find.byType(AppNavigationMenu), findsNothing);
+    expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+    await _tapTab(tester, 'Extrato');
+    expect(app.router.routeInformationProvider.value.uri.path, '/extrato');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile menu closes outside, with Escape and with back', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final app = await _pumpApp(tester);
+    Future<void> open() async {
+      await tester.tap(find.bySemanticsLabel('Abrir menu'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppNavigationMenu), findsOneWidget);
+    }
+
+    await open();
+    await tester.tapAt(const Offset(380, 300));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppNavigationMenu), findsNothing);
+    await open();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(AppNavigationMenu), findsNothing);
+    await open();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(AppNavigationMenu), findsNothing);
+    expect(app.router.routeInformationProvider.value.uri.path, '/inicio');
+  });
+
+  testWidgets('desktop menu retracts and keeps navigation available', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final app = await _pumpApp(tester);
+    await tester.tap(find.bySemanticsLabel('Recolher menu'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(AppNavigationMenu)).width, 80);
+    await _tapTab(tester, 'Produtos');
+    expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+    await tester.tap(find.bySemanticsLabel('Expandir menu'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(AppNavigationMenu)).width, 224);
+    expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the mobile menu fits a narrow screen with enlarged text', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -192,10 +269,14 @@ void main() {
     app.router.go('/mais/sobre');
     await tester.pumpAndSettle();
     expect(find.byType(AboutPage), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Abrir menu'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppNavigationMenu), findsOneWidget);
     app.repository.emit(const AuthSession());
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
     expect(find.byType(AboutPage), findsNothing);
+    expect(find.byType(AppNavigationMenu), findsNothing);
     expect(app.router.routeInformationProvider.value.uri.path, '/login');
   });
 

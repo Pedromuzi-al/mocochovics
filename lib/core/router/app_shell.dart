@@ -1,4 +1,7 @@
-import '../theme/app_theme.dart';
+import '../widgets/app_interaction.dart';
+
+import '../widgets/app_navigation_menu.dart';
+import '../theme/design_tokens.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +22,8 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   late final AuthController _auth;
   bool _showingSessionError = false;
+  bool _collapsed = false;
+  bool _menuOpen = false;
 
   @override
   void initState() {
@@ -45,10 +50,12 @@ class _AppShellState extends ConsumerState<AppShell> {
           title: const Text('Não foi possível concluir o acesso'),
           content: Text(message),
           actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
+            AppHover(
+              child: CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
             ),
           ],
         ),
@@ -66,72 +73,177 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: 'Fornecedores',
-        style: CupertinoTheme.of(context).textTheme.tabLabelTextStyle,
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout(maxWidth: MediaQuery.sizeOf(context).width / 5);
-    final tabHeight = (labelPainter.height + 36).clamp(50.0, double.infinity);
-    labelPainter.dispose();
-    final tabBar = CupertinoTabBar(
-      height: tabHeight,
-      currentIndex: widget.navigationShell.currentIndex,
-      inactiveColor: AppTheme.secondaryTextColor.resolveFrom(context),
-      onTap: (index) {
-        HapticFeedback.selectionClick();
-        widget.navigationShell.goBranch(
-          index,
-          initialLocation: index == widget.navigationShell.currentIndex,
-        );
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(CupertinoIcons.house),
-          activeIcon: Icon(CupertinoIcons.house_fill),
-          label: 'Início',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(CupertinoIcons.doc_text),
-          label: 'Extrato',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(CupertinoIcons.cube_box),
-          activeIcon: Icon(CupertinoIcons.cube_box_fill),
-          label: 'Produtos',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(CupertinoIcons.person_2),
-          activeIcon: Icon(CupertinoIcons.person_2_fill),
-          label: 'Fornecedores',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(CupertinoIcons.ellipsis_circle),
-          activeIcon: Icon(CupertinoIcons.ellipsis_circle_fill),
-          label: 'Mais',
-        ),
-      ],
-    );
-    return CupertinoPageScaffold(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            bottom: bottomInset + tabBar.preferredSize.height,
-            child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                padding: MediaQuery.paddingOf(context).copyWith(bottom: 0),
-              ),
-              child: widget.navigationShell,
-            ),
-          ),
-          Align(alignment: Alignment.bottomCenter, child: tabBar),
-        ],
-      ),
+  void _select(int index) {
+    HapticFeedback.selectionClick();
+    widget.navigationShell.goBranch(
+      index,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
+
+  Future<void> _openMenu() async {
+    if (_menuOpen) return;
+    _menuOpen = true;
+    final width = MediaQuery.sizeOf(context).width;
+    final menuWidth = (width - 40).clamp(0.0, 328.0);
+    try {
+      await Navigator.of(context, rootNavigator: true).push<void>(
+        RawDialogRoute<void>(
+          traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+          barrierDismissible: true,
+          barrierLabel: 'Fechar menu',
+          barrierColor: CupertinoColors.black.withValues(alpha: .4),
+          transitionDuration: AppMotion.duration(context, AppMotion.reveal),
+          requestFocus: true,
+          pageBuilder: (menuContext, animation, secondaryAnimation) =>
+              CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.escape): () =>
+                      Navigator.of(menuContext).pop(),
+                },
+                child: FocusScope(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: menuWidth,
+                      child: GestureDetector(
+                        onHorizontalDragEnd: (details) {
+                          if ((details.primaryVelocity ?? 0) < -200) {
+                            Navigator.of(menuContext).pop();
+                          }
+                        },
+                        child: AppNavigationMenu(
+                          currentIndex: widget.navigationShell.currentIndex,
+                          email: _auth.email,
+                          onToggle: () => Navigator.of(menuContext).pop(),
+                          onSelect: (index) {
+                            Navigator.of(menuContext).pop();
+                            _select(index);
+                          },
+                          drawer: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          transitionBuilder: (context, animation, secondaryAnimation, child) =>
+              SlideTransition(
+                position: Tween(begin: const Offset(-1, 0), end: Offset.zero)
+                    .animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: AppMotion.curve,
+                      ),
+                    ),
+                child: child,
+              ),
+        ),
+      );
+    } finally {
+      _menuOpen = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final wide = constraints.maxWidth >= AppLayout.sidebarBreakpoint;
+      if (wide) {
+        final menuWidth = _collapsed
+            ? 80.0
+            : AppLayout.sidebarWidth +
+                  (MediaQuery.textScalerOf(context).scale(15) / 15 - 1).clamp(
+                        0.0,
+                        1.0,
+                      ) *
+                      104;
+        return CupertinoPageScaffold(
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: AppMotion.duration(context, AppMotion.reveal),
+                curve: AppMotion.curve,
+                width: menuWidth,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.topLeft,
+                    minWidth: menuWidth,
+                    maxWidth: menuWidth,
+                    child: AppNavigationMenu(
+                      currentIndex: widget.navigationShell.currentIndex,
+                      email: _auth.email,
+                      collapsed: _collapsed,
+                      onToggle: () => setState(() => _collapsed = !_collapsed),
+                      onSelect: _select,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(child: widget.navigationShell),
+            ],
+          ),
+        );
+      }
+      return CupertinoPageScaffold(
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: CupertinoColors.secondarySystemGroupedBackground
+                    .resolveFrom(context),
+                border: Border(
+                  bottom: BorderSide(
+                    color: CupertinoColors.separator
+                        .resolveFrom(context)
+                        .withValues(alpha: .25),
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      AppButton(
+                        onPressed: _openMenu,
+                        padding: const EdgeInsets.all(12),
+                        child: const Icon(
+                          CupertinoIcons.line_horizontal_3,
+                          semanticLabel: 'Abrir menu',
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Bar do Mocochovisk',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: MediaQuery.paddingOf(context).copyWith(top: 0),
+                ),
+                child: widget.navigationShell,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }

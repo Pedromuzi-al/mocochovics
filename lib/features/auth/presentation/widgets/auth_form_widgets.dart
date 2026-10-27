@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 
@@ -154,25 +156,30 @@ class AuthField extends StatelessWidget {
           ),
           child: Semantics(
             label: label,
-            child: CupertinoTextFormFieldRow(
-              controller: controller,
-              placeholder: placeholder,
-              placeholderStyle: TextStyle(
-                color: AppTheme.secondaryTextColor.resolveFrom(context),
+            child: AppHover(
+              child: CupertinoTextFormFieldRow(
+                controller: controller,
+                placeholder: placeholder,
+                placeholderStyle: TextStyle(
+                  color: AppTheme.secondaryTextColor.resolveFrom(context),
+                ),
+                obscureText: isPassword,
+                enabled: enabled,
+                autocorrect: false,
+                enableSuggestions: !isPassword,
+                keyboardType: isPassword
+                    ? TextInputType.visiblePassword
+                    : TextInputType.emailAddress,
+                autofillHints: autofillHints,
+                textInputAction: textInputAction,
+                onFieldSubmitted: onSubmitted,
+                onChanged: onChanged,
+                validator: validator,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
-              obscureText: isPassword,
-              enabled: enabled,
-              autocorrect: false,
-              enableSuggestions: !isPassword,
-              keyboardType: isPassword
-                  ? TextInputType.visiblePassword
-                  : TextInputType.emailAddress,
-              autofillHints: autofillHints,
-              textInputAction: textInputAction,
-              onFieldSubmitted: onSubmitted,
-              onChanged: onChanged,
-              validator: validator,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
         ),
@@ -220,7 +227,7 @@ class AuthSubmitButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => CupertinoButton.filled(
+  Widget build(BuildContext context) => AppButton.filled(
     onPressed: isBusy ? null : onPressed,
     child: isBusy
         ? Semantics(label: 'Aguarde', child: const CupertinoActivityIndicator())

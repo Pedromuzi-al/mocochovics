@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -27,19 +29,25 @@ class ProductRecordTile extends StatelessWidget {
       builder: (context) => CupertinoActionSheet(
         title: Text(product['name']),
         actions: [
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context, 'edit'),
-            child: const Text('Editar produto'),
+          AppHover(
+            child: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, 'edit'),
+              child: const Text('Editar produto'),
+            ),
           ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, 'delete'),
-            child: const Text('Excluir produto'),
+          AppHover(
+            child: CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.pop(context, 'delete'),
+              child: const Text('Excluir produto'),
+            ),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+        cancelButton: AppHover(
+          child: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
         ),
       ),
     );
@@ -63,7 +71,7 @@ class ProductRecordTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: CupertinoButton(
+            child: AppButton(
               padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
               alignment: Alignment.centerLeft,
               onPressed: onTap,
@@ -189,7 +197,7 @@ class ProductRecordTile extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 4, right: 4),
-            child: CupertinoButton(
+            child: AppButton(
               padding: const EdgeInsets.all(10),
               onPressed: () => _showActions(context),
               child: Icon(

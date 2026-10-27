@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,7 +86,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: _submit,
                 ),
                 const SizedBox(height: 12),
-                CupertinoButton(
+                AppButton(
                   onPressed: controller.isBusy
                       ? null
                       : () {
@@ -96,7 +98,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                CupertinoButton(
+                AppButton(
                   onPressed: controller.isBusy
                       ? null
                       : () {

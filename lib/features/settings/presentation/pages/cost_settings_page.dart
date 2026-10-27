@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,17 +27,17 @@ class CostSettingsPage extends ConsumerWidget {
               const SizedBox(height: 20),
               FinanceSection(
                 children: [
-                  CupertinoListTile(
+                  AppListTile(
                     title: const Text('Método de custo'),
                     subtitle: Text(preferences.methodLabel, maxLines: 3),
                   ),
-                  CupertinoListTile(
+                  AppListTile(
                     title: const Text('Margem-alvo'),
                     subtitle: Text(
                       '${localizedMeasurement(preferences.targetMargin * Decimal.fromInt(100), digits: 4)}%',
                     ),
                   ),
-                  CupertinoListTile(
+                  AppListTile(
                     title: const Text('Alerta de aumento de preço'),
                     subtitle: Text(
                       'Acima de ${localizedMeasurement(preferences.priceAlertThreshold * Decimal.fromInt(100), digits: 4)}%',
@@ -49,7 +51,7 @@ class CostSettingsPage extends ConsumerWidget {
                 style: TextStyle(fontSize: 14, height: 1.5),
               ),
               const SizedBox(height: 20),
-              CupertinoButton.filled(
+              AppButton.filled(
                 onPressed: () => editRecord(
                   context,
                   ref,

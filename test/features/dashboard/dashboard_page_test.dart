@@ -112,7 +112,7 @@ void main() {
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
     await tester.pumpAndSettle();
     expect(find.textContaining('Venda a receber'), findsOneWidget);
-    expect(find.textContaining('Aluguel'), findsOneWidget);
+    expect(find.text('Aluguel'), findsOneWidget);
     expect(find.textContaining('Venda antiga'), findsNothing);
   });
 
@@ -126,7 +126,7 @@ void main() {
       );
       expect(find.text(BrFormatters.currencyFromCents(66510)), findsOneWidget);
       expect(find.text(BrFormatters.currencyFromCents(95000)), findsOneWidget);
-      expect(find.byType(BarChart), findsOneWidget);
+      expect(find.byType(BarChart), findsNWidgets(2));
       expect(find.byType(PieChart), findsOneWidget);
       await tester.tap(find.text('Este mês'));
       await tester.pumpAndSettle();

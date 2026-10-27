@@ -99,6 +99,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sem custo'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Novo lanche'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Novo lanche'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));

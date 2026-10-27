@@ -101,6 +101,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run --da
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run -d chrome --web-port=3000 --dart-define-from-file=config/supabase.web.json
 ```
 
+No Linux, com o SDK local deste workspace e a configuração já preenchida:
+
+```bash
+.tooling/flutter/bin/flutter pub get
+.tooling/flutter/bin/flutter run -d web-server --web-hostname=127.0.0.1 --web-port=3000 --dart-define-from-file=config/supabase.web.json
+```
+
+Abra `http://localhost:3000` quando o terminal indicar que o servidor está pronto.
+Para executar uma compilação pronta, use:
+
+```bash
+.tooling/flutter/bin/flutter build web --release --dart-define-from-file=config/supabase.web.json
+python3 -m http.server 3000 --bind 127.0.0.1 --directory build/web
+```
+
 Sem configuração válida, o app apresenta orientação para conectar ao Supabase.
 Sem a migration, as telas de dados apresentam erro com opção de tentar novamente.
 
@@ -202,9 +217,9 @@ No Windows, os comandos podem ser passados ao script acima. Android release
 ainda exige configurar um keystore próprio; o template utiliza assinatura debug.
 iOS exige macOS e assinatura configurada no Xcode.
 
-O build de verificação em `build/web/` foi gerado sem credenciais e abre a
-orientação de configuração. Gere novamente com o arquivo de configuração real
-para acessar os dados do seu projeto Supabase.
+O build local mais recente em `build/web/` usa `config/supabase.web.json`.
+Ao gerar um build em outro ambiente, informe a configuração pública do Supabase
+com `--dart-define-from-file`; sem ela, o aplicativo abre a orientação de configuração.
 
 ## Organização e decisões
 
@@ -224,4 +239,30 @@ double é usado somente para desenhar o gráfico.
 
 Cache offline, fila de sincronização e execução de recorrências com o app
 fechado ficam fora desta entrega. As recorrências vencidas são geradas ao abrir
-uma tela de dados ou atualizar a lista. Exportações pertencem à etapa 7.
+uma tela de dados ou atualizar a lista. Exportações permanecem no roadmap funcional, separado das etapas de refinamento visual.
+
+## Refinamento visual e animações
+
+As oito etapas de refinamento foram aplicadas ao aplicativo existente: tokens
+compartilhados, dashboard responsivo, extrato com filtros em sheet e chips,
+listagens de produtos/fornecedores, telas secundárias, navegação lateral no
+desktop e motion com redução de movimento. A inicialização web apresenta
+carregamento e recuperação antes do primeiro frame Flutter.
+
+Veja o [relatório de entrega e validação](docs/refinamento-visual-entrega.md)
+e a [auditoria inicial](docs/auditoria-visual-etapa-1.md).
+
+```bash
+.tooling/flutter/bin/dart analyze lib test
+.tooling/flutter/bin/flutter test --no-pub --dart-define=CAPTURE_PREVIEWS=true --dart-define=VISUAL_AUDIT=true
+node scripts/validate_web_bootstrap.mjs
+```
+
+As capturas em `build/visual-audit/` usam fixtures de teste nas áreas autenticadas;
+o login é verificado separadamente no navegador. Elas não comprovam operações
+autenticadas em um Supabase real.
+
+A navegação móvel agora usa um menu retrátil no canto superior esquerdo. No
+desktop, a barra lateral pode ser recolhida para ícones. Botões, listas e campos
+recebem hover/foco; cards têm destaque e elevação animada com redução de movimento.
+Veja os [detalhes e capturas desta atualização](docs/interacoes-menu-retratil.md).

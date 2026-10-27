@@ -17,6 +17,7 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Controle financeiro do Bar do Mocochovisk.">
   <meta name="color-scheme" content="light dark">
@@ -34,14 +35,28 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <style>
+    :root { color-scheme: light dark; --page: #f2f2f7; --ink: #17171b; --muted: #595963; --blue: #0062cc; }
+    @media (prefers-color-scheme: dark) { :root { --page: #000; --ink: #fff; --muted: #aeaeb8; --blue: #6baeff; } }
+    body { margin: 0; background: var(--page); }
+    #app-startup { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px; background: var(--page); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+    #app-startup[hidden] { display: none; }
+    .startup-content { max-width: 400px; text-align: center; }
+    .startup-mark { display: inline-grid; place-items: center; width: 64px; height: 64px; margin-bottom: 20px; border-radius: 20px; background: var(--blue); color: var(--page); font-size: 28px; }
+    #app-startup h1 { margin: 0 0 12px; font-size: 25px; letter-spacing: -.6px; }
+    #startup-message { color: var(--muted); }
+    #startup-retry { padding: 12px 20px; min-height: 44px; border: none; border-radius: 12px; background: var(--blue); color: var(--page); font: inherit; cursor: pointer; }
+    #startup-retry:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+  </style>
+  <div id="app-startup" role="status" aria-live="polite">
+    <div class="startup-content">
+      <div class="startup-mark" aria-hidden="true">▥</div>
+      <h1>Bar do Mocochovisk</h1>
+      <p id="startup-message">Preparando seu bar…</p>
+      <button id="startup-retry" type="button" hidden>Atualizar página</button>
+      <noscript>Ative o JavaScript no navegador para abrir o aplicativo.</noscript>
+    </div>
+  </div>
+  <script src="flutter_bootstrap.js" async onerror="document.getElementById('startup-message').textContent='Não foi possível carregar o aplicativo. Confira sua conexão e tente novamente.'; document.getElementById('startup-retry').hidden=false; document.getElementById('startup-retry').onclick=function(){window.location.reload()}"></script>
 </body>
 </html>

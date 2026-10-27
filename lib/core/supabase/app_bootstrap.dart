@@ -1,3 +1,5 @@
+import '../widgets/app_interaction.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -127,7 +129,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 20),
-                              CupertinoButton.filled(
+                              AppButton.filled(
                                 onPressed: () => setState(
                                   () => _initialization = _initialize(),
                                 ),

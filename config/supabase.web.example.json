@@ -1,5 +1,5 @@
 {
-  "SUPABASE_URL": "https://SEU-PROJETO.supabase.co",
-  "SUPABASE_PUBLISHABLE_KEY": "SUA-CHAVE-PUBLICAVEL",
+  "SUPABASE_URL": "https://udyumygjkgchvfkrreso.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ttlS_CBDP5pSOHoz_V-GkA_5xJma-o_",
   "AUTH_REDIRECT_URL": "http://localhost:3000/"
 }

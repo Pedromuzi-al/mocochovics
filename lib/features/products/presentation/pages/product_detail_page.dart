@@ -1,3 +1,5 @@
+import '../../../../core/widgets/app_interaction.dart';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,11 +172,11 @@ class ProductDetailPage extends ConsumerWidget {
               ),
               Wrap(
                 children: [
-                  CupertinoButton(
+                  AppButton(
                     onPressed: () => editProduct(context, ref, product),
                     child: const Text('Editar produto'),
                   ),
-                  CupertinoButton(
+                  AppButton(
                     onPressed: () => openFinancePage<void>(
                       context,
                       const CostSettingsPage(),
@@ -186,7 +188,7 @@ class ProductDetailPage extends ConsumerWidget {
               SectionHeading(
                 'Ficha técnica',
                 subtitle: 'Quantidade na unidade base. Perda aumenta a quantidade consumida.',
-                action: CupertinoButton(
+                action: AppButton(
                   padding: EdgeInsets.zero,
                   onPressed: () => _editRecipe(context, ref, snapshot),
                   child: const Icon(
@@ -214,6 +216,26 @@ class ProductDetailPage extends ConsumerWidget {
                         item['id'],
                       ),
                     ),
+                ],
+              ),
+              FinanceSection(
+                title: 'Configuração de margem',
+                children: [
+                  AppListTile(
+                    title: const Text('Margem-alvo'),
+                    additionalInfo: Text(
+                      '${localizedMeasurement(preferences.targetMargin * Decimal.fromInt(100), digits: 4)}%',
+                    ),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () => openFinancePage<void>(
+                      context,
+                      const CostSettingsPage(),
+                    ),
+                  ),
+                  AppListTile(
+                    title: const Text('Custo dos ingredientes'),
+                    subtitle: Text(preferences.methodLabel),
+                  ),
                 ],
               ),
               PremiumSurface(

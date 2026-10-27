@@ -153,6 +153,6 @@ void main() {
     repository.failure = null;
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
-    expect(find.text('Nenhum registro encontrado.'), findsOneWidget);
+    expect(find.text('Seus fornecedores aparecerão aqui'), findsOneWidget);
   });
 }
