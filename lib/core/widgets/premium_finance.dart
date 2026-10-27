@@ -105,16 +105,18 @@ class FinanceMetricCard extends StatelessWidget {
     required this.icon,
     required this.accent,
     this.note,
+    this.onTap,
     super.key,
   });
   final String label, value;
   final IconData icon;
   final CupertinoDynamicColor accent;
   final String? note;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final color = accent.resolveFrom(context);
-    return PremiumSurface(
+    final card = PremiumSurface(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,6 +175,16 @@ class FinanceMetricCard extends StatelessWidget {
         ],
       ),
     );
+    return onTap == null
+        ? card
+        : CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: onTap,
+            child: DefaultTextStyle(
+              style: CupertinoTheme.of(context).textTheme.textStyle,
+              child: card,
+            ),
+          );
   }
 }
 

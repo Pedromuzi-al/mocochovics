@@ -17,6 +17,8 @@ Decimal roundedDivision(Decimal numerator, Decimal denominator, int scale) =>
         .round(scale: scale);
 String localizedDecimal(Decimal value, [int digits = 2]) =>
     value.toStringAsFixed(digits).replaceAll('.', ',');
+String localizedMeasurement(Decimal value, {int digits = 6}) =>
+    value.round(scale: digits).toString().replaceAll('.', ',');
 String money(Decimal? value) => value == null
     ? 'Sem custo disponível'
     : BrFormatters.currencyFromCents(FinancialMath.cents(value));

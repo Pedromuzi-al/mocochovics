@@ -11,6 +11,7 @@ class FinanceRecordTile extends StatelessWidget {
     this.subtitle,
     this.onTap,
     this.titleColor,
+    this.child,
     super.key,
   });
   final String id, title;
@@ -18,6 +19,7 @@ class FinanceRecordTile extends StatelessWidget {
   final VoidCallback onEdit, onDelete;
   final VoidCallback? onTap;
   final Color? titleColor;
+  final Widget? child;
   @override
   Widget build(BuildContext context) => Dismissible(
     key: ValueKey(id),
@@ -41,31 +43,39 @@ class FinanceRecordTile extends StatelessWidget {
       }
       return false;
     },
-    child: CupertinoListTile(
-      title: Text(
-        title,
-        maxLines: 3,
-        style: AppTheme.tabularFigures(
-          CupertinoTheme.of(context).textTheme.textStyle,
-        ).copyWith(color: titleColor),
-      ),
-      subtitle: subtitle == null ? null : Text(subtitle!, maxLines: 4),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CupertinoButton(
-            padding: const EdgeInsets.all(10),
-            onPressed: onEdit,
-            child: const Icon(CupertinoIcons.pencil, semanticLabel: 'Editar'),
+    child:
+        child ??
+        CupertinoListTile(
+          title: Text(
+            title,
+            maxLines: 3,
+            style: AppTheme.tabularFigures(
+              CupertinoTheme.of(context).textTheme.textStyle,
+            ).copyWith(color: titleColor),
           ),
-          CupertinoButton(
-            padding: const EdgeInsets.all(10),
-            onPressed: onDelete,
-            child: const Icon(CupertinoIcons.delete, semanticLabel: 'Excluir'),
+          subtitle: subtitle == null ? null : Text(subtitle!, maxLines: 4),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CupertinoButton(
+                padding: const EdgeInsets.all(10),
+                onPressed: onEdit,
+                child: const Icon(
+                  CupertinoIcons.pencil,
+                  semanticLabel: 'Editar',
+                ),
+              ),
+              CupertinoButton(
+                padding: const EdgeInsets.all(10),
+                onPressed: onDelete,
+                child: const Icon(
+                  CupertinoIcons.delete,
+                  semanticLabel: 'Excluir',
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      onTap: onTap ?? onEdit,
-    ),
+          onTap: onTap ?? onEdit,
+        ),
   );
 }

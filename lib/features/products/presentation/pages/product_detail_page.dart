@@ -141,7 +141,7 @@ class ProductDetailPage extends ConsumerWidget {
                     ),
                     LabeledAmount(
                       label:
-                          'Preço sugerido · meta ${localizedDecimal(preferences.targetMargin * Decimal.fromInt(100))}%',
+                          'Preço sugerido · meta ${localizedMeasurement(preferences.targetMargin * Decimal.fromInt(100), digits: 4)}%',
                       amount: financials?.suggestedPrice == null
                           ? '—'
                           : money(financials!.suggestedPrice),
@@ -205,7 +205,7 @@ class ProductDetailPage extends ConsumerWidget {
                         item['ingredient_id'],
                       ),
                       subtitle:
-                          '${localizedDecimal(Decimal.parse(item['quantity'].toString()), 3)} ${ingredients[item['ingredient_id']]?['base_unit'] ?? ''} · perda ${localizedDecimal(Decimal.parse(item['loss'].toString()) * Decimal.fromInt(100))}%\nCusto na receita: ${money(RecipeComponent(quantity: Decimal.parse(item['quantity'].toString()), loss: Decimal.parse(item['loss'].toString()), unitCost: ingredientCosts[item['ingredient_id']]).cost)}',
+                          '${localizedMeasurement(Decimal.parse(item['quantity'].toString()))} ${ingredients[item['ingredient_id']]?['base_unit'] ?? ''} · perda ${localizedMeasurement(Decimal.parse(item['loss'].toString()) * Decimal.fromInt(100), digits: 4)}%\nCusto na receita: ${money(RecipeComponent(quantity: Decimal.parse(item['quantity'].toString()), loss: Decimal.parse(item['loss'].toString()), unitCost: ingredientCosts[item['ingredient_id']]).cost)}',
                       onEdit: () => _editRecipe(context, ref, snapshot, item),
                       onDelete: () => deleteRecord(
                         context,

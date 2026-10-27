@@ -9,6 +9,7 @@ class StatementFilter {
     this.type,
     this.categoryId,
     this.supplierId,
+    this.suppliersOnly = false,
     this.paymentMethod,
     this.status,
     this.search = '',
@@ -19,6 +20,7 @@ class StatementFilter {
   final String? type;
   final String? categoryId;
   final String? supplierId;
+  final bool suppliersOnly;
   final String? paymentMethod;
   final String? status;
   final String search;
@@ -31,6 +33,7 @@ class StatementFilter {
           (type == null || row['type'] == type) &&
           (categoryId == null || row['category_id'] == categoryId) &&
           (supplierId == null || row['supplier_id'] == supplierId) &&
+          (!suppliersOnly || row['supplier_id'] != null) &&
           (paymentMethod == null || row['payment_method'] == paymentMethod) &&
           (status == null || row['status'] == status) &&
           row['description'].toString().toLowerCase().contains(

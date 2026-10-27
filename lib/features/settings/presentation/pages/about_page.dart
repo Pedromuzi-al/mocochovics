@@ -48,18 +48,18 @@ class AboutPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Em construção',
+                  'Finanças e custos do bar',
                   style: textTheme.textStyle.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Esta versão entrega a estrutura do aplicativo, o tema '
-                  'claro e escuro, a navegação e a autenticação. '
-                  'Fornecedores, ingredientes, lançamentos, produtos, '
-                  'indicadores e exportações serão implementados nas '
-                  'próximas etapas.',
+                  'Acompanhe entradas e saídas, organize fornecedores e '
+                  'ingredientes e monte as fichas técnicas dos produtos. '
+                  'O painel reúne indicadores, gráficos e alertas para '
+                  'ajudar nas decisões do dia a dia. As margens estimam '
+                  'o resultado dos ingredientes e não o lucro líquido do bar.',
                   style: textTheme.textStyle.copyWith(
                     color: secondaryLabel,
                     height: 1.45,

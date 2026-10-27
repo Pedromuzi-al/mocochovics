@@ -10,7 +10,11 @@ import '../../../transactions/domain/statement_filter.dart';
 import '../../../transactions/presentation/pages/transaction_editor.dart';
 
 class StatementPage extends ConsumerStatefulWidget {
-  const StatementPage({super.key});
+  const StatementPage({
+    this.initialFilter = const StatementFilter(),
+    super.key,
+  });
+  final StatementFilter initialFilter;
   @override
   ConsumerState<StatementPage> createState() => _StatementPageState();
 }
@@ -20,21 +24,41 @@ class _StatementPageState extends ConsumerState<StatementPage> {
   String _search = '';
   final _searchController = TextEditingController();
   @override
+  void initState() {
+    super.initState();
+    final filter = widget.initialFilter;
+    _filters = {
+      if (filter.start != null || filter.end != null) 'use_period': true,
+      if (filter.start != null) 'start': FinancialMath.date(filter.start!),
+      if (filter.end != null) 'end': FinancialMath.date(filter.end!),
+      'type': filter.type,
+      'category_id': filter.categoryId,
+      'supplier_id': filter.supplierId,
+      'suppliers_only': filter.suppliersOnly,
+      'payment_method': filter.paymentMethod,
+      'status': filter.status,
+    };
+    _search = filter.search;
+    _searchController.text = _search;
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   StatementFilter get _filter => StatementFilter(
-    start: _filters['use_period'] == true
+    start: _filters['use_period'] == true && _filters['start'] != null
         ? DateTime.parse(_filters['start'])
         : null,
-    end: _filters['use_period'] == true
+    end: _filters['use_period'] == true && _filters['end'] != null
         ? DateTime.parse(_filters['end'])
         : null,
     type: _filters['type'],
     categoryId: _filters['category_id'],
     supplierId: _filters['supplier_id'],
+    suppliersOnly: _filters['suppliers_only'] == true,
     paymentMethod: _filters['payment_method'],
     status: _filters['status'],
     search: _search,
@@ -77,6 +101,11 @@ class _StatementPageState extends ConsumerState<StatementPage> {
             'supplier_id',
             'Fornecedor',
             options: rowOptions(snapshot, 'suppliers'),
+          ),
+          const EditField(
+            'suppliers_only',
+            'Somente com fornecedor',
+            toggle: true,
           ),
           const EditField(
             'payment_method',
@@ -141,6 +170,32 @@ class _StatementPageState extends ConsumerState<StatementPage> {
                   ),
                 ],
               ),
+              if (_filters['use_period'] == true &&
+                  _filters['start'] != null &&
+                  _filters['end'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '${BrFormatters.date(DateTime.parse(_filters['start']))} — ${BrFormatters.date(DateTime.parse(_filters['end']))}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              if (_filters['type'] != null ||
+                  _filters['status'] != null ||
+                  _filters['suppliers_only'] == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    [
+                      if (_filters['type'] != null)
+                        transactionTypes[_filters['type']]!,
+                      if (_filters['status'] != null)
+                        paymentStatuses[_filters['status']]!,
+                      if (_filters['suppliers_only'] == true) 'Com fornecedor',
+                    ].join(' · '),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
               const SizedBox(height: 16),
               CupertinoSearchTextField(
                 controller: _searchController,

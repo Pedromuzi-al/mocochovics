@@ -32,13 +32,13 @@ class CostSettingsPage extends ConsumerWidget {
                   CupertinoListTile(
                     title: const Text('Margem-alvo'),
                     subtitle: Text(
-                      '${localizedDecimal(preferences.targetMargin * Decimal.fromInt(100))}%',
+                      '${localizedMeasurement(preferences.targetMargin * Decimal.fromInt(100), digits: 4)}%',
                     ),
                   ),
                   CupertinoListTile(
                     title: const Text('Alerta de aumento de preço'),
                     subtitle: Text(
-                      'Acima de ${localizedDecimal(preferences.priceAlertThreshold * Decimal.fromInt(100))}%',
+                      'Acima de ${localizedMeasurement(preferences.priceAlertThreshold * Decimal.fromInt(100), digits: 4)}%',
                       maxLines: 3,
                     ),
                   ),

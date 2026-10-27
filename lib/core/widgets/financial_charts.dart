@@ -8,6 +8,7 @@ import '../../features/dashboard/domain/dashboard_report.dart';
 import '../../features/products/domain/product_financials.dart';
 import '../theme/app_theme.dart';
 import '../utils/br_formatters.dart';
+import 'finance_widgets.dart';
 import 'premium_finance.dart';
 
 Duration _duration(BuildContext context) =>
@@ -18,6 +19,47 @@ TextStyle _caption(BuildContext context) => TextStyle(
   fontSize: 11,
   color: AppTheme.secondaryTextColor.resolveFrom(context),
 );
+
+/// Exact source values remain available without touching individual chart marks.
+class FinancialDataButton extends StatelessWidget {
+  const FinancialDataButton({
+    required this.title,
+    required this.entries,
+    super.key,
+  });
+  final String title;
+  final List<({String label, String value})> entries;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Valores de $title',
+    child: CupertinoButton(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      alignment: Alignment.centerLeft,
+      onPressed: () => openFinancePage<void>(
+        context,
+        CupertinoPageScaffold(
+          navigationBar: const CupertinoNavigationBar(
+            middle: Text('Valores do gráfico'),
+          ),
+          child: SafeArea(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: entries.length + 1,
+              itemBuilder: (context, index) => index == 0
+                  ? SectionHeading(title)
+                  : LabeledAmount(
+                      label: entries[index - 1].label,
+                      amount: entries[index - 1].value,
+                    ),
+            ),
+          ),
+        ),
+      ),
+      child: const Text('Ver valores'),
+    ),
+  );
+}
 
 class FinancialLineChart extends StatelessWidget {
   const FinancialLineChart({
@@ -192,6 +234,19 @@ class FinancialLineChart extends StatelessWidget {
               ],
             ),
           ),
+        FinancialDataButton(
+          title: 'Evolução',
+          entries: [
+            for (final item in series)
+              for (final point in item.points)
+                (
+                  label: '${item.label} · ${BrFormatters.date(point.date)}',
+                  value: point.value == null
+                      ? 'Indisponível'
+                      : _value(point.value!),
+                ),
+          ],
+        ),
       ],
     );
   }
@@ -336,6 +391,21 @@ class CashFlowChart extends StatelessWidget {
           'Toque nas barras para ver os valores. Agrupado por ${report.grouping}.',
           style: _caption(context),
         ),
+        FinancialDataButton(
+          title: 'Entradas e saídas',
+          entries: [
+            for (final bucket in report.buckets) ...[
+              (
+                label: '${BrFormatters.date(bucket.date)} · Entradas',
+                value: BrFormatters.currencyFromCents(bucket.income),
+              ),
+              (
+                label: '${BrFormatters.date(bucket.date)} · Saídas',
+                value: BrFormatters.currencyFromCents(bucket.expenses),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -349,7 +419,15 @@ class ExpensesDonut extends StatefulWidget {
 }
 
 class _ExpensesDonutState extends State<ExpensesDonut> {
-  int? _selected;
+  String? _selectedId;
+  @override
+  void didUpdateWidget(covariant ExpensesDonut oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.categories.any((item) => item.id == _selectedId)) {
+      _selectedId = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) {
@@ -362,6 +440,9 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
       0,
       (sum, item) => sum + item.cents,
     );
+    final selected = widget.categories
+        .where((item) => item.id == _selectedId)
+        .firstOrNull;
     return Column(
       children: [
         Semantics(
@@ -374,11 +455,18 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
                 centerSpaceRadius: 55,
                 sectionsSpace: 3,
                 pieTouchData: PieTouchData(
-                  touchCallback: (event, response) => setState(
-                    () => _selected = event.isInterestedForInteractions
-                        ? response?.touchedSection?.touchedSectionIndex
-                        : null,
-                  ),
+                  touchCallback: (event, response) {
+                    final index = response?.touchedSection?.touchedSectionIndex;
+                    setState(
+                      () => _selectedId =
+                          event.isInterestedForInteractions &&
+                              index != null &&
+                              index >= 0 &&
+                              index < widget.categories.length
+                          ? widget.categories[index].id
+                          : null,
+                    );
+                  },
                 ),
                 sections: [
                   for (var index = 0; index < widget.categories.length; index++)
@@ -388,7 +476,9 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
                           .chartColors[index %
                               FinancePalette.chartColors.length]
                           .resolveFrom(context),
-                      radius: _selected == index ? 43 : 35,
+                      radius: _selectedId == widget.categories[index].id
+                          ? 43
+                          : 35,
                       showTitle: false,
                     ),
                 ],
@@ -400,7 +490,8 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
         for (var index = 0; index < widget.categories.length; index++)
           CupertinoButton(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            onPressed: () => setState(() => _selected = index),
+            onPressed: () =>
+                setState(() => _selectedId = widget.categories[index].id),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -427,13 +518,21 @@ class _ExpensesDonutState extends State<ExpensesDonut> {
               ],
             ),
           ),
-        if (_selected != null &&
-            _selected! >= 0 &&
-            _selected! < widget.categories.length)
+        if (selected != null)
           Text(
-            'Selecionado: ${widget.categories[_selected!].label} · ${BrFormatters.currencyFromCents(widget.categories[_selected!].cents)}',
+            'Selecionado: ${selected.label} · ${BrFormatters.currencyFromCents(selected.cents)}',
             style: _caption(context),
           ),
+        FinancialDataButton(
+          title: 'Despesas por categoria',
+          entries: [
+            for (final category in widget.categories)
+              (
+                label: category.label,
+                value: BrFormatters.currencyFromCents(category.cents),
+              ),
+          ],
+        ),
       ],
     );
   }

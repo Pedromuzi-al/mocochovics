@@ -31,6 +31,16 @@ etapa 7 ficam para a próxima entrega.
   nas demais áreas, conforme o prompt visual.
 - Histórico de custos por produto, gerado automaticamente no banco pela
   migration 002 e protegido contra escrita direta pelo cliente.
+- Produtos com filtros de margem baixa e custo indisponível, resumo legível de
+  venda/custo/margem e ações de edição/exclusão em sheet, preservando os gestos.
+- Indicadores do dashboard abrem os lançamentos do período com os filtros de
+  entrada, saída paga, contas pendentes ou gastos com fornecedores. Os alertas
+  permitem abrir diretamente as listas de produtos que precisam de atenção.
+- Gráficos com consulta dos valores em uma lista acessível, sem depender do
+  toque nos pontos. A seleção de categoria acompanha seu identificador mesmo
+  quando a ordem das despesas muda ao atualizar o período.
+- Fichas exibem quantidades com até seis casas e perdas com até quatro casas
+  percentuais; metas e limites também preservam as casas aceitas no cadastro.
 
 Os dados do aplicativo vêm do Supabase. Os registros fictícios existem somente
 nos testes, inclusive nas capturas de tela. O saldo considera movimentos pagos;
@@ -127,6 +137,14 @@ Sem a migration, as telas de dados apresentam erro com opção de tentar novamen
 14. Toque em barras, linhas e categorias; selecione ingredientes/produtos nos
     gráficos. Confira rankings de fornecedores e margens. Alertas de preço
     respeitam o período; margens são a situação atual dos produtos.
+15. Toque nos indicadores de entradas, saídas, pendências e fornecedores.
+    Confira no extrato o mesmo período, os filtros ativos e os totais do card.
+    O indicador de fornecedores não deve incluir saídas sem fornecedor.
+16. Nos produtos, combine busca com os filtros de margem baixa e sem custo.
+    Abra o menu de ações e confirme a exclusão; confira também os gestos.
+    Com fonte ampliada, o filtro abre uma sheet para manter a legibilidade.
+17. Use Ver valores nos gráficos para consultar números sem selecionar pontos,
+    incluindo observações com custo indisponível nos históricos com lacunas.
 
 ## Verificações automatizadas
 
@@ -140,11 +158,16 @@ A suíte cobre autenticação, navegação, configuração, formulários, falhas
 persistência, filtros, saldos, conversão de unidades, decimais, receitas, perdas,
 margem, markup, configurações, períodos, agrupamentos, alertas e histórico.
 
-Verificado nesta entrega: 80 testes aprovados com as capturas visuais habilitadas
-(79 testes de comportamento e uma captura opcional), análise sem issues,
+Verificado nesta continuação das etapas 5 e 6: 93 testes aprovados com as capturas
+visuais habilitadas (92 testes de comportamento e uma captura opcional), análise sem issues,
 formatação verificada, build web compilado e testes SQL locais aprovados.
 Os serviços de e-mail e comprovantes ainda precisam da validação em um projeto
 Supabase real; builds Android/iOS não foram executados nesta entrega.
+
+No Linux desta validação, `flutter analyze` encontrou uma falha de protocolo do
+analisador quando executado no caminho com acento. A análise foi concluída em
+uma cópia temporária das mesmas fontes em caminho ASCII, com o SDK fixado pelo
+projeto. O SDK não foi alterado. Testes, capturas e build web usam a pasta original.
 
 Para gerar as capturas, execute os testes com
 `--dart-define=CAPTURE_PREVIEWS=true`. As imagens ficam em `build/previews/`:

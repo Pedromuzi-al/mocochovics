@@ -2,7 +2,6 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/br_formatters.dart';
@@ -12,9 +11,12 @@ import '../../../../core/widgets/premium_finance.dart';
 import '../../../ingredients/presentation/pages/ingredients_page.dart';
 import '../../../products/domain/product_financials.dart';
 import '../../../products/presentation/pages/product_detail_page.dart';
+import '../../../products/presentation/pages/products_page.dart';
 import '../../../settings/presentation/pages/cost_settings_page.dart';
+import '../../../statement/presentation/pages/statement_page.dart';
 import '../../../suppliers/presentation/pages/suppliers_page.dart';
 import '../../../transactions/data/finance_repository.dart';
+import '../../../transactions/domain/statement_filter.dart';
 import '../../../transactions/presentation/pages/transaction_editor.dart';
 import '../../domain/dashboard_report.dart';
 
@@ -41,6 +43,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   DateRange get _range => _period == DashboardPeriod.custom && _custom != null
       ? _custom!
       : DateRange.period(_period, _now);
+
+  void _openStatement({
+    String? type,
+    String? status,
+    bool suppliersOnly = false,
+  }) {
+    openFinancePage<void>(
+      context,
+      StatementPage(
+        initialFilter: StatementFilter(
+          start: _range.start,
+          end: _range.end,
+          type: type,
+          status: status,
+          suppliersOnly: suppliersOnly,
+        ),
+      ),
+    );
+  }
 
   Future<void> _selectPeriod() async {
     final selected = await showCupertinoModalPopup<DashboardPeriod>(
@@ -252,6 +273,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ),
                           icon: CupertinoIcons.arrow_down_left,
                           accent: FinancePalette.income,
+                          note: 'Ver entradas ›',
+                          onTap: () =>
+                              _openStatement(type: 'entrada', status: 'pago'),
                         ),
                       ),
                       SizedBox(
@@ -263,6 +287,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ),
                           icon: CupertinoIcons.arrow_up_right,
                           accent: FinancePalette.expense,
+                          note: 'Ver saídas ›',
+                          onTap: () =>
+                              _openStatement(type: 'saida', status: 'pago'),
                         ),
                       ),
                       SizedBox(
@@ -274,6 +301,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ),
                           icon: CupertinoIcons.clock,
                           accent: FinancePalette.warning,
+                          note: 'Ver contas ›',
+                          onTap: () =>
+                              _openStatement(type: 'saida', status: 'pendente'),
                         ),
                       ),
                       SizedBox(
@@ -285,6 +315,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ),
                           icon: CupertinoIcons.cube_box,
                           accent: AppTheme.actionColor,
+                          note: 'Ver gastos ›',
+                          onTap: () => _openStatement(
+                            type: 'saida',
+                            status: 'pago',
+                            suppliersOnly: true,
+                          ),
                         ),
                       ),
                     ],
@@ -301,7 +337,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     child: const Text('Novo lançamento'),
                   ),
                   CupertinoButton(
-                    onPressed: () => context.go('/extrato'),
+                    onPressed: () => _openStatement(),
                     child: const Text('Ver extrato'),
                   ),
                 ],
@@ -314,7 +350,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     SectionHeading(
                       'Atenção às margens',
                       subtitle:
-                          'Situação atual dos produtos · meta ${localizedDecimal(preferences.targetMargin * Decimal.fromInt(100))}%',
+                          'Situação atual dos produtos · meta ${localizedMeasurement(preferences.targetMargin * Decimal.fromInt(100), digits: 4)}%',
                     ),
                     LabeledAmount(
                       label: 'Produtos abaixo da meta',
@@ -355,6 +391,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                               '${localizedDecimal(ProductFinancials.fromDatabase(product).marginPercent!)}%',
                           color: FinancePalette.warning.resolveFrom(context),
                         ),
+                      ),
+                    if (lowCount > 0)
+                      CupertinoButton(
+                        onPressed: () => openFinancePage<void>(
+                          context,
+                          const ProductsPage(
+                            initialFilter: ProductFilter.lowMargin,
+                          ),
+                        ),
+                        child: const Text('Ver todos com margem baixa'),
+                      ),
+                    if (report.missingCosts > 0)
+                      CupertinoButton(
+                        onPressed: () => openFinancePage<void>(
+                          context,
+                          const ProductsPage(
+                            initialFilter: ProductFilter.missingCost,
+                          ),
+                        ),
+                        child: const Text('Completar fichas sem custo'),
                       ),
                   ],
                 ),
@@ -541,7 +597,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
               _panel(
                 'Alertas de preços',
-                'Aumento acima de ${localizedDecimal(preferences.priceAlertThreshold * Decimal.fromInt(100))}% na última cotação de fornecedores ativos, dentro do período.',
+                'Aumento acima de ${localizedMeasurement(preferences.priceAlertThreshold * Decimal.fromInt(100), digits: 4)}% na última cotação de fornecedores ativos, dentro do período.',
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

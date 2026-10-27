@@ -34,6 +34,110 @@ Future<void> pumpFinancePage(
 
 void main() {
   testWidgets(
+    'missing-cost filter combines with search without treating missing costs as zero',
+    (tester) async {
+      await pumpFinancePage(tester, const ProductsPage(), financeFixture());
+      await tester.tap(find.text('Sem custo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Novo lanche'), findsOneWidget);
+      expect(find.text('Caipirinha'), findsNothing);
+      expect(find.textContaining('Custo indisponível'), findsOneWidget);
+      await tester.enterText(
+        find.byType(CupertinoSearchTextField),
+        'caipirinha',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Nenhum produto corresponde à busca e ao filtro.'),
+        findsOneWidget,
+      );
+      expect(find.text('Cadastrar produto'), findsNothing);
+    },
+  );
+
+  testWidgets('product actions require confirmation before deleting', (
+    tester,
+  ) async {
+    final repository = financeFixture();
+    await pumpFinancePage(tester, const ProductsPage(), repository);
+    await tester.tap(find.bySemanticsLabel('Ações de Caipirinha'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CupertinoActionSheet), findsOneWidget);
+    await tester.tap(find.text('Excluir produto'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+    expect(
+      repository.data['products']!.any((row) => row['id'] == 'drink'),
+      isTrue,
+    );
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+    expect(
+      repository.data['products']!.any((row) => row['id'] == 'drink'),
+      isFalse,
+    );
+    expect(find.text('Caipirinha'), findsNothing);
+  });
+
+  testWidgets(
+    'product list and native filter support large text on narrow screens',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpFinancePage(
+        tester,
+        const ProductsPage(),
+        financeFixture(),
+        brightness: Brightness.dark,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Filtro: Todos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sem custo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Novo lanche'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'recipe displays the stored precision for tiny quantities and losses',
+    (tester) async {
+      final repository = financeFixture();
+      repository.data['product_recipe_items']!.first.addAll({
+        'quantity': '0.000001',
+        'loss': '0.000001',
+      });
+      await pumpFinancePage(
+        tester,
+        const ProductDetailPage(id: 'drink'),
+        repository,
+      );
+      expect(find.textContaining('0,000001 g · perda 0,0001%'), findsOneWidget);
+    },
+  );
+
+  testWidgets('cost preferences display all accepted percentage digits', (
+    tester,
+  ) async {
+    final repository = financeFixture();
+    repository.data['app_settings']!.single.addAll({
+      'target_margin': '0.301234',
+      'price_alert_threshold': '0.101234',
+    });
+    await pumpFinancePage(tester, const CostSettingsPage(), repository);
+    expect(find.text('30,1234%'), findsOneWidget);
+    expect(find.text('Acima de 10,1234%'), findsOneWidget);
+  });
+
+  testWidgets(
     'products show costs and estimated margins, then filter low margins',
     (tester) async {
       await pumpFinancePage(tester, const ProductsPage(), financeFixture());

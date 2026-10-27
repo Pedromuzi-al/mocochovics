@@ -1,21 +1,54 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/widgets/finance_record_tile.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/finance_widgets.dart';
 import '../../../../core/widgets/premium_finance.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/product_financials.dart';
+import '../widgets/product_record_tile.dart';
 import 'product_detail_page.dart';
 
+enum ProductFilter { all, lowMargin, missingCost }
+
+const _filterLabels = {
+  ProductFilter.all: 'Todos',
+  ProductFilter.lowMargin: 'Margem baixa',
+  ProductFilter.missingCost: 'Sem custo',
+};
+
 class ProductsPage extends ConsumerStatefulWidget {
-  const ProductsPage({super.key});
+  const ProductsPage({this.initialFilter = ProductFilter.all, super.key});
+  final ProductFilter initialFilter;
   @override
   ConsumerState<ProductsPage> createState() => _ProductsPageState();
 }
 
 class _ProductsPageState extends ConsumerState<ProductsPage> {
-  String _search = '', _filter = 'todos';
+  String _search = '';
+  late ProductFilter _filter = widget.initialFilter;
+
+  Future<void> _selectFilter() async {
+    final selected = await showCupertinoModalPopup<ProductFilter>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Filtrar produtos'),
+        actions: [
+          for (final entry in _filterLabels.entries)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, entry.key),
+              child: Text(entry.value),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+      ),
+    );
+    if (selected != null && mounted) setState(() => _filter = selected);
+  }
+
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Produtos',
@@ -37,8 +70,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     '${row['name']} ${row['category']}'.toLowerCase().contains(
                       _search.toLowerCase(),
                     ) &&
-                    (_filter == 'todos' ||
-                        metrics[row['id']]?.lowMargin == true),
+                    switch (_filter) {
+                      ProductFilter.all => true,
+                      ProductFilter.lowMargin =>
+                        metrics[row['id']]?.lowMargin == true,
+                      ProductFilter.missingCost =>
+                        metrics[row['id']]?.cost == null,
+                    },
               )
               .toList()
             ..sort(
@@ -57,16 +95,24 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
-                child: CupertinoSlidingSegmentedControl<String>(
-                  groupValue: _filter,
-                  children: const {
-                    'todos': Text('Todos'),
-                    'alertas': Text('Margem baixa'),
-                  },
-                  onValueChanged: (value) {
-                    if (value != null) setState(() => _filter = value);
-                  },
-                ),
+                child: MediaQuery.textScalerOf(context).scale(14) > 20
+                    ? CupertinoButton(
+                        onPressed: _selectFilter,
+                        child: Text('Filtro: ${_filterLabels[_filter]}'),
+                      )
+                    : CupertinoSlidingSegmentedControl<ProductFilter>(
+                        groupValue: _filter,
+                        children: {
+                          for (final entry in _filterLabels.entries)
+                            entry.key: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(entry.value),
+                            ),
+                        },
+                        onValueChanged: (value) {
+                          if (value != null) setState(() => _filter = value);
+                        },
+                      ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -74,27 +120,54 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 style: TextStyle(fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 16),
-              FinanceSection(
-                children: [
-                  for (final product in products)
-                    FinanceRecordTile(
-                      id: product['id'],
-                      title: product['name'],
-                      subtitle:
-                          '${product['category']} · Venda ${money(decimalOrNull(product['sale_price']))}\nCusto ${metrics[product['id']]?.cost == null ? 'indisponível' : money(metrics[product['id']]!.cost)} · Margem ${metrics[product['id']]?.marginPercent == null ? '—' : '${localizedDecimal(metrics[product['id']]!.marginPercent!)}%'}${metrics[product['id']]?.lowMargin == true ? '\n⚠ Margem abaixo da meta' : ''}',
-                      titleColor: metrics[product['id']]?.lowMargin == true
-                          ? FinancePalette.warning.resolveFrom(context)
-                          : null,
-                      onTap: () => openFinancePage<void>(
-                        context,
-                        ProductDetailPage(id: product['id']),
-                      ),
-                      onEdit: () => editProduct(context, ref, product),
-                      onDelete: () =>
-                          deleteRecord(context, ref, 'products', product['id']),
+              if (products.isEmpty)
+                Column(
+                  children: [
+                    FinanceEmptyState(
+                      icon: CupertinoIcons.cube_box,
+                      message: snapshot.rows('products').isEmpty
+                          ? 'Cadastre seu primeiro produto e monte a ficha técnica para conhecer seus custos.'
+                          : 'Nenhum produto corresponde à busca e ao filtro.',
                     ),
-                ],
-              ),
+                    if (snapshot.rows('products').isEmpty)
+                      CupertinoButton.filled(
+                        onPressed: () => editProduct(context, ref),
+                        child: const Text('Cadastrar produto'),
+                      ),
+                  ],
+                )
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 12),
+                  child: Text(
+                    '${products.length} ${products.length == 1 ? 'produto' : 'produtos'} · ${CostPreferences.fromSnapshot(snapshot).methodLabel}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.secondaryTextColor.resolveFrom(context),
+                    ),
+                  ),
+                ),
+                FinanceSection(
+                  children: [
+                    for (final product in products)
+                      ProductRecordTile(
+                        product: product,
+                        financials: metrics[product['id']],
+                        onTap: () => openFinancePage<void>(
+                          context,
+                          ProductDetailPage(id: product['id']),
+                        ),
+                        onEdit: () => editProduct(context, ref, product),
+                        onDelete: () => deleteRecord(
+                          context,
+                          ref,
+                          'products',
+                          product['id'],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
