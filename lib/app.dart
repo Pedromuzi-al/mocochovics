@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/appearance_controller.dart';
+import 'core/widgets/operation_feedback.dart';
 
 const appLocalizationsDelegates = [
   GlobalCupertinoLocalizations.delegate,
@@ -24,7 +26,25 @@ class MocochoviskApp extends ConsumerWidget {
         locale: const Locale('pt', 'BR'),
         supportedLocales: const [Locale('pt', 'BR')],
         localizationsDelegates: appLocalizationsDelegates,
-        theme: AppTheme.build(MediaQuery.platformBrightnessOf(context)),
+        theme: AppTheme.build(
+          ref
+              .watch(appearanceProvider)
+              .brightness(MediaQuery.platformBrightnessOf(context)),
+        ),
+        builder: (context, child) {
+          final preferences = ref.watch(appearanceProvider);
+          final media = MediaQuery.of(context);
+          return MediaQuery(
+            data: media.copyWith(
+              platformBrightness: preferences.brightness(
+                media.platformBrightness,
+              ),
+              disableAnimations:
+                  media.disableAnimations || preferences.reduceMotion,
+            ),
+            child: OperationFeedback(child: child!),
+          );
+        },
         routerConfig: ref.watch(appRouterProvider),
       ),
     ),

@@ -98,7 +98,7 @@ Detalhes do banco e das decisões de negócio em [supabase/README.md](supabase/R
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run --dart-define-from-file=config/supabase.json
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run -d chrome --web-port=3000 --dart-define-from-file=config/supabase.web.json
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter.ps1 run --device-id=web-server --web-hostname=localhost --web-port=3000 --dart-define-from-file=config/supabase.web.json
 ```
 
 No Linux, com o SDK local deste workspace e a configuração já preenchida:
@@ -262,7 +262,10 @@ As capturas em `build/visual-audit/` usam fixtures de teste nas áreas autentica
 o login é verificado separadamente no navegador. Elas não comprovam operações
 autenticadas em um Supabase real.
 
-A navegação móvel agora usa um menu retrátil no canto superior esquerdo. No
-desktop, a barra lateral pode ser recolhida para ícones. Botões, listas e campos
-recebem hover/foco; cards têm destaque e elevação animada com redução de movimento.
-Veja os [detalhes e capturas desta atualização](docs/interacoes-menu-retratil.md).
+A navegação móvel usa uma barra flutuante com cinco destinos e mantém o menu
+retrátil como atalho adicional. No desktop, a barra lateral pode ser recolhida
+para ícones. O visual 2.0 aplica materiais adaptativos aos controles, animações
+amortecidas, dashboard em verde profundo e formulários em sheets com proteção
+contra descarte de alterações. Em **Mais → Aplicativo → Aparência**, escolha
+**Sistema**, **Claro** ou **Escuro**; a preferência é salva no dispositivo.
+Veja a [entrega Liquid Glass 2.0](docs/liquid-glass-2.0.md).

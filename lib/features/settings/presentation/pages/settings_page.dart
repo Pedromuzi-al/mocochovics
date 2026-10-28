@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/feature_scaffold.dart';
+import '../../../../core/widgets/appearance_controls.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -182,26 +183,7 @@ class SettingsPage extends ConsumerWidget {
                 style: AppType.group.copyWith(color: secondaryLabel),
               ),
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Aparência'),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Automática · acompanha o sistema',
-                          style: textTheme.textStyle.copyWith(
-                            fontSize: 15,
-                            color: secondaryLabel,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const AppearanceControls(),
                 AppListTile.notched(
                   title: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),

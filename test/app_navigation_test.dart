@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:mocochovisk/core/widgets/app_navigation_menu.dart';
+import 'package:mocochovisk/core/widgets/floating_navigation.dart';
+import 'package:mocochovisk/core/theme/appearance_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -23,10 +25,14 @@ import 'package:mocochovisk/features/transactions/data/finance_repository.dart';
 
 const _signedIn = AuthSession(email: 'dono@bar.example', isAuthenticated: true);
 
-Future<({FakeAuthRepository repository, GoRouter router})> _pumpApp(
-  WidgetTester tester, {
-  AuthSession session = _signedIn,
-}) async {
+Future<
+  ({
+    FakeAuthRepository repository,
+    GoRouter router,
+    ProviderContainer container,
+  })
+>
+_pumpApp(WidgetTester tester, {AuthSession session = _signedIn}) async {
   final repository = FakeAuthRepository(session: session);
   final container = ProviderContainer(
     overrides: [
@@ -46,7 +52,11 @@ Future<({FakeAuthRepository repository, GoRouter router})> _pumpApp(
     ),
   );
   await tester.pumpAndSettle();
-  return (repository: repository, router: container.read(appRouterProvider));
+  return (
+    repository: repository,
+    router: container.read(appRouterProvider),
+    container: container,
+  );
 }
 
 Future<void> _tapTab(WidgetTester tester, String label) async {
@@ -67,6 +77,64 @@ double _contrast(Color first, Color second) {
 }
 
 void main() {
+  testWidgets(
+    'floating navigation preserves a tab search when changing branches',
+    (tester) async {
+      await _pumpApp(tester);
+      await _tapTab(tester, 'Produtos');
+      await tester.enterText(find.byType(CupertinoSearchTextField), 'limão');
+      await tester.pumpAndSettle();
+      await _tapTab(tester, 'Extrato');
+      await _tapTab(tester, 'Produtos');
+      expect(
+        tester
+            .widget<CupertinoSearchTextField>(
+              find.byType(CupertinoSearchTextField),
+            )
+            .controller!
+            .text,
+        'limão',
+      );
+      expect(
+        tester
+            .widget<FloatingNavigation>(find.byType(FloatingNavigation))
+            .currentIndex,
+        2,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'manual appearance updates the entire app and overrides system brightness',
+    (tester) async {
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      final app = await _pumpApp(tester);
+      await app.container
+          .read(appearanceProvider.notifier)
+          .update(appearance: AppAppearance.dark);
+      await tester.pumpAndSettle();
+      expect(
+        CupertinoTheme.brightnessOf(tester.element(find.byType(DashboardPage))),
+        Brightness.dark,
+      );
+      await _tapTab(tester, 'Produtos');
+      expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+      await app.container
+          .read(appearanceProvider.notifier)
+          .update(appearance: AppAppearance.light);
+      await tester.pumpAndSettle();
+      expect(app.router.routeInformationProvider.value.uri.path, '/produtos');
+      expect(
+        CupertinoTheme.brightnessOf(
+          tester.element(find.byType(FloatingNavigation)),
+        ),
+        Brightness.light,
+      );
+    },
+  );
+
   testWidgets('an anonymous launch and protected deep link require login', (
     tester,
   ) async {
@@ -87,6 +155,7 @@ void main() {
     expect(find.bySemanticsLabel('Abrir menu'), findsOneWidget);
     expect(find.byType(CupertinoTabBar), findsNothing);
     expect(find.byType(DashboardPage), findsOneWidget);
+    expect(find.byType(FloatingNavigation), findsOneWidget);
 
     for (final entry in {
       'Extrato': '/extrato',

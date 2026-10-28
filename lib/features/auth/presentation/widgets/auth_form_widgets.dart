@@ -1,4 +1,5 @@
 import '../../../../core/widgets/app_interaction.dart';
+import '../../../../core/widgets/appearance_controls.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +28,7 @@ class AuthPageLayout extends StatelessWidget {
         context,
       ),
       navigationBar: CupertinoNavigationBar(
+        trailing: const AppearanceButton(),
         automaticallyImplyLeading: false,
         middle: const Text('Bar do Mocochovisk'),
         leading: showBack

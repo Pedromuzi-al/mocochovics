@@ -8,6 +8,8 @@ import '../../../../core/utils/financial_math.dart';
 import '../../../../core/widgets/transaction_record_tile.dart';
 import '../../../../core/widgets/premium_finance.dart';
 import '../../../../core/widgets/app_motion.dart';
+import '../../../../core/widgets/finance_search_field.dart';
+import '../../../../core/widgets/liquid_glass.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/finance_widgets.dart';
 import '../../../transactions/data/finance_repository.dart';
@@ -247,15 +249,41 @@ class _StatementPageState extends ConsumerState<StatementPage> {
                   ),
                 ),
               const SizedBox(height: 16),
-              AppHover(
-                child: CupertinoSearchTextField(
-                  controller: _searchController,
-                  placeholder: 'Buscar descrição',
-                  onChanged: (value) => setState(() => _search = value),
-                ),
+              FinanceSearchField(
+                controller: _searchController,
+                placeholder: 'Buscar descrição',
+                onChanged: (value) => setState(() => _search = value),
               ),
               const SizedBox(height: 16),
               _StatementSummary(totals: totals),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: LiquidGlass(
+                  radius: 18,
+                  padding: const EdgeInsets.all(4),
+                  child: CupertinoSlidingSegmentedControl<String>(
+                    backgroundColor: CupertinoColors.transparent,
+                    groupValue: _filters['type'] as String? ?? 'all',
+                    children: const {
+                      'all': Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Text('Todos'),
+                      ),
+                      'entrada': Text('Entradas'),
+                      'saida': Text('Saídas'),
+                    },
+                    onValueChanged: (value) {
+                      if (value != null) {
+                        setState(
+                          () =>
+                              _filters['type'] = value == 'all' ? null : value,
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
               Text(
                 '${rows.length} ${rows.length == 1 ? 'lançamento' : 'lançamentos'} · ordem cronológica',
@@ -295,6 +323,12 @@ class _StatementPageState extends ConsumerState<StatementPage> {
         ),
         SliverList.builder(
           itemCount: rows.length,
+          findChildIndexCallback: (key) {
+            final index = rows.indexWhere(
+              (row) => row['id'] == (key as ValueKey).value,
+            );
+            return index < 0 ? null : index;
+          },
           itemBuilder: (context, index) {
             final row = rows[index];
             final newDay = index == 0 || rows[index - 1]['date'] != row['date'];

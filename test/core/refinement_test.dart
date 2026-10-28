@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocochovisk/core/utils/br_formatters.dart';
 import 'package:mocochovisk/core/widgets/app_motion.dart';
 import 'package:mocochovisk/core/widgets/finance_widgets.dart';
+import 'package:mocochovisk/core/widgets/finance_sheet.dart';
 import 'package:mocochovisk/features/products/presentation/pages/products_page.dart';
 import 'package:mocochovisk/features/products/presentation/widgets/product_record_tile.dart';
 import 'package:mocochovisk/features/statement/presentation/pages/statement_page.dart';
@@ -12,6 +13,24 @@ import '../features/products/finance_fixture.dart';
 import '../features/products/product_pages_test.dart' show pumpFinancePage;
 
 void main() {
+  testWidgets(
+    'a slow initial load offers recovery instead of an endless spinner',
+    (tester) async {
+      var retries = 0;
+      await tester.pumpWidget(
+        CupertinoApp(home: FinanceLoadingState(onRetry: () => retries++)),
+      );
+      await tester.pump(const Duration(seconds: 21));
+      await tester.pumpAndSettle();
+      expect(find.text('A conexão está demorando'), findsOneWidget);
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pump();
+      expect(retries, 1);
+      expect(find.text('Atualizando seu bar…'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets('financial editor stays readable on a wide viewport', (
     tester,
   ) async {
@@ -71,7 +90,7 @@ void main() {
     await pumpFinancePage(tester, const StatementPage(), financeFixture());
     await tester.tap(find.text('Filtros'));
     await tester.pumpAndSettle();
-    expect(find.byType(CupertinoPopupSurface), findsWidgets);
+    expect(find.byType(FinanceSheetScope), findsOneWidget);
     await tester.tap(find.text('Tipo'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Entrada'));

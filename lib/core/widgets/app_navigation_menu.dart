@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import '../theme/app_theme.dart';
 import '../theme/design_tokens.dart';
 import 'app_interaction.dart';
+import 'appearance_controls.dart';
+import 'liquid_glass.dart';
 
 class AppNavigationMenu extends StatelessWidget {
   const AppNavigationMenu({
@@ -101,19 +103,8 @@ class AppNavigationMenu extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
-        context,
-      ),
-      border: Border(
-        right: BorderSide(
-          color: CupertinoColors.separator
-              .resolveFrom(context)
-              .withValues(alpha: .3),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => LiquidGlass(
+    radius: drawer ? 0 : 24,
     child: SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -200,6 +191,7 @@ class AppNavigationMenu extends StatelessWidget {
                 ),
               ),
             ),
+            const AppearanceButton(),
             if (!collapsed) ...[
               const SizedBox(height: 16),
               Row(

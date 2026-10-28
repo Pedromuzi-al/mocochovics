@@ -1,4 +1,5 @@
 import '../widgets/app_interaction.dart';
+import '../widgets/app_motion.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +38,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       _route('/register', const RegisterPage()),
       _route('/forgot-password', const ForgotPasswordPage()),
       _route('/reset-password', const ResetPasswordPage()),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, shell, children) =>
+            BranchTransition(index: shell.currentIndex, children: children),
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
         branches: [

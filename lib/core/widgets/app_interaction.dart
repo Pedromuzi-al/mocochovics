@@ -131,15 +131,59 @@ class AppButton extends StatelessWidget {
             onPressed: onPressed,
             child: child,
           );
+    final responsive = _PressResponse(
+      enabled: onPressed != null,
+      child: button,
+    );
     return hoverFeedback
         ? AppHover(
             enabled: onPressed != null,
             filled: _filled || color != null,
             radius: borderRadius?.topLeft.x ?? AppRadii.control,
-            child: button,
+            child: responsive,
           )
-        : button;
+        : responsive;
   }
+}
+
+class _PressResponse extends StatefulWidget {
+  const _PressResponse({required this.enabled, required this.child});
+  final bool enabled;
+  final Widget child;
+  @override
+  State<_PressResponse> createState() => _PressResponseState();
+}
+
+class _PressResponseState extends State<_PressResponse> {
+  bool _pressed = false;
+  void _set(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: widget.enabled ? (_) => _set(true) : null,
+    onPointerUp: (_) => _set(false),
+    onPointerCancel: (_) => _set(false),
+    child: TweenAnimationBuilder<double>(
+      tween: Tween(
+        end:
+            _pressed &&
+                widget.enabled &&
+                !MediaQuery.disableAnimationsOf(context)
+            ? .97
+            : 1,
+      ),
+      duration: AppMotion.duration(
+        context,
+        _pressed ? AppMotion.press : AppMotion.navigation,
+      ),
+      curve: AppMotion.spring,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: widget.child,
+    ),
+  );
 }
 
 class AppListTile extends StatelessWidget {

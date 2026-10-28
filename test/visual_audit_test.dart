@@ -168,6 +168,13 @@ void main() {
           await route(tab.value);
           await capture(tab.key);
         }
+        await route('/mais');
+        await tester.scrollUntilVisible(
+          find.text('Aparência'),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await capture('settings-appearance');
 
         await route('/inicio');
         if (viewport.value.size.width < 1000) {
@@ -235,7 +242,7 @@ void main() {
           await tapText('Novo lançamento');
           await capture('transaction-form');
           await tester.drag(
-            find.byType(Scrollable).first,
+            find.byType(Scrollable).last,
             const Offset(0, -800),
           );
           await capture('transaction-form-lower');
@@ -244,7 +251,7 @@ void main() {
           await tapText('Caipirinha');
           await capture('product-detail');
           await tester.drag(
-            find.byType(Scrollable).first,
+            find.byType(Scrollable).last,
             const Offset(0, -700),
           );
           await capture('product-detail-lower');
@@ -253,7 +260,7 @@ void main() {
           await tapText('Distribuidora Central');
           await capture('supplier-detail');
           await tester.drag(
-            find.byType(Scrollable).first,
+            find.byType(Scrollable).last,
             const Offset(0, -650),
           );
           await capture('supplier-detail-lower');

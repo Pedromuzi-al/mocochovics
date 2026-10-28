@@ -7,6 +7,7 @@ import '../../../../core/widgets/finance_record_tile.dart';
 import '../../../../core/widgets/premium_finance.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/product_financials.dart';
+import 'product_identity.dart';
 
 /// A grouped list row with a readable financial summary and secondary actions.
 class ProductRecordTile extends StatelessWidget {
@@ -85,9 +86,9 @@ class ProductRecordTile extends StatelessWidget {
                     final name = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          product['name'],
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ProductIdentity(
+                          id: product['id'],
+                          name: product['name'],
                         ),
                         const SizedBox(height: 4),
                         Text(

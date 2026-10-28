@@ -15,6 +15,8 @@ import '../theme/app_theme.dart';
 import '../theme/design_tokens.dart';
 import 'app_states.dart';
 import 'app_motion.dart';
+import 'finance_sheet.dart';
+import 'operation_feedback.dart';
 export 'app_states.dart';
 
 String financeError(Object error) {
@@ -102,6 +104,7 @@ Future<void> deleteRecord(
         /* The shared body displays refresh failures. */
       }
       HapticFeedback.mediumImpact();
+      if (context.mounted) OperationFeedback.show(context, 'Registro excluído');
     } finally {
       motion.finish(id);
     }
@@ -130,7 +133,16 @@ class FinanceBody extends ConsumerWidget {
       trailing: trailing,
       maxContentWidth: maxContentWidth,
       slivers: data.when(
-        loading: () => [const SliverToBoxAdapter(child: FinanceLoadingState())],
+        // Show a known failure while Riverpod retries instead of hiding it
+        // behind another loading screen. Dependency changes still clear data.
+        skipLoadingOnReload: data.retrying,
+        loading: () => [
+          SliverToBoxAdapter(
+            child: FinanceLoadingState(
+              onRetry: () => ref.invalidate(financeSnapshotProvider),
+            ),
+          ),
+        ],
         error: (error, stack) => [
           SliverToBoxAdapter(
             child: AppStateView(
@@ -261,27 +273,11 @@ class EditField {
 }
 
 Future<T?> openFinanceSheet<T>(BuildContext context, Widget page) =>
-    showCupertinoModalPopup<T>(
-      context: context,
-      useRootNavigator: false,
-      builder: (context) => SafeArea(
-        top: true,
-        bottom: false,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 760,
-              maxHeight: MediaQuery.sizeOf(context).height * .92,
-            ),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadii.card),
-              ),
-              child: CupertinoPopupSurface(child: page),
-            ),
-          ),
-        ),
+    Navigator.of(context, rootNavigator: true).push<T>(
+      FinanceSheetRoute<T>(
+        page: page,
+        guard: SheetDismissGuard(),
+        reducedMotion: MediaQuery.disableAnimationsOf(context),
       ),
     );
 
@@ -299,7 +295,7 @@ Future<void> editRecord(
   DataRow Function(DataRow)? transform,
 }) async {
   final repository = ref.read(financeRepositoryProvider);
-  final saved = await openFinancePage<bool>(
+  final saved = await openFinanceSheet<bool>(
     context,
     RecordEditor(
       title: title,
@@ -315,7 +311,10 @@ Future<void> editRecord(
       },
     ),
   );
-  if (saved == true) ref.invalidate(financeSnapshotProvider);
+  if (saved == true) {
+    ref.invalidate(financeSnapshotProvider);
+    if (context.mounted) OperationFeedback.show(context, 'Registro salvo');
+  }
 }
 
 class RecordEditor extends StatefulWidget {
@@ -327,6 +326,8 @@ class RecordEditor extends StatefulWidget {
     this.footer,
     this.saveLabel = 'Salvar',
     this.showNavigationSave = true,
+    this.hasExternalChanges = false,
+    this.externalBusy = false,
     super.key,
   });
   final String title;
@@ -336,6 +337,7 @@ class RecordEditor extends StatefulWidget {
   final Widget? footer;
   final String saveLabel;
   final bool showNavigationSave;
+  final bool hasExternalChanges, externalBusy;
   @override
   State<RecordEditor> createState() => _RecordEditorState();
 }
@@ -344,6 +346,8 @@ class _RecordEditorState extends State<RecordEditor> {
   final _form = GlobalKey<FormState>();
   final _controllers = <String, TextEditingController>{};
   late DataRow _values;
+  late DataRow _initialValues;
+  bool _allowPop = false, _confirmingClose = false;
   bool _busy = false;
   String? _error;
   @override
@@ -361,6 +365,45 @@ class _RecordEditorState extends State<RecordEditor> {
           : value.toString();
       _controllers[field.key] = TextEditingController(text: text);
     }
+    _initialValues = Map.of(_values);
+  }
+
+  bool get _dirty =>
+      widget.hasExternalChanges ||
+      _values.keys.any((key) => _values[key] != _initialValues[key]);
+
+  Future<void> _requestClose() async {
+    if (_busy || widget.externalBusy || _confirmingClose) return;
+    if (_dirty && !_allowPop) {
+      _confirmingClose = true;
+      final discard = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Descartar alterações?'),
+          content: const Text(
+            'As alterações que você fez ainda não foram salvas.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Continuar editando'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Descartar'),
+            ),
+          ],
+        ),
+      );
+      _confirmingClose = false;
+      if (!mounted || discard != true) return;
+    }
+    if (!mounted) return;
+    setState(() => _allowPop = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -372,7 +415,7 @@ class _RecordEditorState extends State<RecordEditor> {
   }
 
   Future<void> _save() async {
-    if (_busy || !_form.currentState!.validate()) return;
+    if (_busy || widget.externalBusy || !_form.currentState!.validate()) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -402,7 +445,14 @@ class _RecordEditorState extends State<RecordEditor> {
       }
       await widget.onSave(payload);
       HapticFeedback.mediumImpact();
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        setState(() {
+          _allowPop = true;
+          _busy = false;
+        });
+        await WidgetsBinding.instance.endOfFrame;
+        if (mounted) Navigator.pop(context, true);
+      }
     } catch (error) {
       if (mounted) setState(() => _error = financeError(error));
     } finally {
@@ -411,81 +461,109 @@ class _RecordEditorState extends State<RecordEditor> {
   }
 
   @override
-  Widget build(BuildContext context) => CupertinoPageScaffold(
-    navigationBar: CupertinoNavigationBar(
-      middle: Text(widget.title),
-      trailing: !widget.showNavigationSave
-          ? null
-          : _busy
-          ? const CupertinoActivityIndicator()
-          : AppButton(
-              padding: EdgeInsets.zero,
-              onPressed: _save,
-              child: Text(widget.saveLabel),
+  Widget build(BuildContext context) {
+    final sheet = FinanceSheetScope.maybeOf(context);
+    if (sheet != null) {
+      sheet.guard.blocked = _busy || widget.externalBusy || _dirty;
+    }
+    return PopScope<bool>(
+      canPop: !_busy && !widget.externalBusy && (!_dirty || _allowPop),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _requestClose();
+      },
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          leading: AppButton(
+            padding: EdgeInsets.zero,
+            onPressed: _busy || widget.externalBusy ? null : _requestClose,
+            child: const Icon(
+              CupertinoIcons.xmark,
+              semanticLabel: 'Fechar formulário',
             ),
-    ),
-    child: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppLayout.formWidth),
-          child: Form(
-            key: _form,
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      for (final field in widget.fields)
-                        if (field.visible == null || field.visible!(_values))
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: CupertinoColors
-                                    .secondarySystemGroupedBackground
-                                    .resolveFrom(context),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.section,
+          ),
+          middle: Text(widget.title),
+          trailing: !widget.showNavigationSave
+              ? null
+              : _busy
+              ? const CupertinoActivityIndicator()
+              : AppButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: _save,
+                  child: Text(widget.saveLabel),
+                ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppLayout.formWidth),
+              child: Form(
+                key: _form,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        controller: sheet?.controller,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          for (final field in widget.fields)
+                            if (field.visible == null ||
+                                field.visible!(_values))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors
+                                        .secondarySystemGroupedBackground
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.section,
+                                    ),
+                                  ),
+                                  child: _field(field),
                                 ),
                               ),
-                              child: _field(field),
+                          if (widget.footer != null)
+                            IgnorePointer(
+                              ignoring: _busy,
+                              child: widget.footer!,
                             ),
-                          ),
-                      if (widget.footer != null)
-                        IgnorePointer(ignoring: _busy, child: widget.footer!),
-                      if (_error != null)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: CupertinoColors.systemRed.resolveFrom(
-                                context,
+                          if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                _error!,
+                                style: TextStyle(
+                                  color: CupertinoColors.systemRed.resolveFrom(
+                                    context,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: AppButton.filled(
-                      onPressed: _busy ? null : _save,
-                      child: Text(_busy ? 'Salvando…' : widget.saveLabel),
+                        ],
+                      ),
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: AppButton.filled(
+                          onPressed: _busy ? null : _save,
+                          child: Text(_busy ? 'Salvando…' : widget.saveLabel),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
   Widget _field(EditField field) {
     final value = _values[field.key];
     if (field.toggle) {
@@ -627,27 +705,30 @@ Future<String?> chooseOption(
   Map<String, String> options,
 ) => openFinanceSheet<String>(
   context,
-  CupertinoPageScaffold(
-    navigationBar: CupertinoNavigationBar(
-      middle: Text(title),
-      trailing: AppButton(
-        padding: EdgeInsets.zero,
-        onPressed: () => Navigator.pop(context),
-        child: const Icon(
-          CupertinoIcons.xmark,
-          semanticLabel: 'Fechar seleção',
+  Builder(
+    builder: (context) => CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(title),
+        trailing: AppButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.pop(context),
+          child: const Icon(
+            CupertinoIcons.xmark,
+            semanticLabel: 'Fechar seleção',
+          ),
         ),
       ),
-    ),
-    child: SafeArea(
-      child: ListView(
-        children: [
-          for (final option in options.entries)
-            AppListTile(
-              title: Text(option.value, maxLines: 3),
-              onTap: () => Navigator.pop(context, option.key),
-            ),
-        ],
+      child: SafeArea(
+        child: ListView(
+          controller: FinanceSheetScope.maybeOf(context)?.controller,
+          children: [
+            for (final option in options.entries)
+              AppListTile(
+                title: Text(option.value, maxLines: 3),
+                onTap: () => Navigator.pop(context, option.key),
+              ),
+          ],
+        ),
       ),
     ),
   ),

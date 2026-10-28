@@ -8,6 +8,8 @@ import '../../../../core/utils/br_formatters.dart';
 import '../../../../core/utils/financial_math.dart';
 import '../../../../core/widgets/finance_record_tile.dart';
 import '../../../../core/widgets/finance_widgets.dart';
+import '../../../../core/widgets/finance_search_field.dart';
+import '../../../../core/widgets/liquid_glass.dart';
 import '../../../../core/widgets/premium_finance.dart';
 import '../../../statement/presentation/pages/statement_page.dart';
 import '../../../transactions/domain/statement_filter.dart';
@@ -59,18 +61,19 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppHover(
-                child: CupertinoSearchTextField(
-                  placeholder: 'Buscar fornecedor',
-                  controller: _searchController,
-                  onChanged: (value) => setState(() => _search = value),
-                ),
+              FinanceSearchField(
+                placeholder: 'Buscar fornecedor',
+                controller: _searchController,
+                onChanged: (value) => setState(() => _search = value),
               ),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
-                child: AppHover(
+                child: LiquidGlass(
+                  radius: 18,
+                  padding: const EdgeInsets.all(4),
                   child: CupertinoSlidingSegmentedControl<String>(
+                    backgroundColor: CupertinoColors.transparent,
                     groupValue: _status,
                     children: const {
                       'todos': Text('Todos'),

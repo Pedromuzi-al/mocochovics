@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/finance_widgets.dart';
+import '../../../../core/widgets/finance_search_field.dart';
+import '../../../../core/widgets/liquid_glass.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/product_financials.dart';
 import '../widgets/product_record_tile.dart';
@@ -100,12 +102,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppHover(
-                child: CupertinoSearchTextField(
-                  placeholder: 'Buscar produto ou categoria',
-                  controller: _searchController,
-                  onChanged: (value) => setState(() => _search = value),
-                ),
+              FinanceSearchField(
+                placeholder: 'Buscar produto ou categoria',
+                controller: _searchController,
+                onChanged: (value) => setState(() => _search = value),
               ),
               const SizedBox(height: 16),
               Align(
@@ -115,8 +115,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                         onPressed: _selectFilter,
                         child: Text('Filtro: ${_filterLabels[_filter]}'),
                       )
-                    : AppHover(
+                    : LiquidGlass(
+                        radius: 18,
+                        padding: const EdgeInsets.all(4),
                         child: CupertinoSlidingSegmentedControl<ProductFilter>(
+                          backgroundColor: CupertinoColors.transparent,
                           groupValue: _filter,
                           children: {
                             for (final entry in _filterLabels.entries)

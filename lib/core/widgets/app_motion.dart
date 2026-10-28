@@ -101,3 +101,57 @@ class AnimatedMoney extends StatelessWidget {
     ),
   );
 }
+
+/// Switches branches without disposing navigators or their scroll positions.
+class BranchTransition extends StatefulWidget {
+  const BranchTransition({
+    required this.index,
+    required this.children,
+    super.key,
+  });
+  final int index;
+  final List<Widget> children;
+  @override
+  State<BranchTransition> createState() => _BranchTransitionState();
+}
+
+class _BranchTransitionState extends State<BranchTransition>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: AppMotion.short,
+    value: 1,
+  );
+  @override
+  void didUpdateWidget(BranchTransition oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.value = 1;
+      } else {
+        _controller.forward(from: .25);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _controller,
+    child: IndexedStack(
+      index: widget.index,
+      children: [
+        for (var index = 0; index < widget.children.length; index++)
+          TickerMode(
+            enabled: index == widget.index,
+            child: widget.children[index],
+          ),
+      ],
+    ),
+  );
+}

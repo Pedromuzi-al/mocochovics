@@ -262,7 +262,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              AppReveal(child: _BalanceHero(report: report)),
+              AppReveal(
+                child: _BalanceHero(
+                  report: report,
+                  onTap: () => _openStatement(status: 'pago'),
+                ),
+              ),
               const SizedBox(height: 14),
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -706,44 +711,47 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 }
 
 class _BalanceHero extends StatelessWidget {
-  const _BalanceHero({required this.report});
+  const _BalanceHero({required this.report, required this.onTap});
   final DashboardReport report;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final reduced =
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.of(context).accessibleNavigation;
     final negative = report.totals.balance < 0;
     final background = negative
-        ? (dark ? const Color(0xFF2B1519) : const Color(0xFFF9EBEE))
-        : (dark ? const Color(0xFF0C251C) : const Color(0xFFE4F3EC));
-    final foreground = negative
-        ? (dark ? const Color(0xFFFFB0B7) : const Color(0xFF8F2935))
-        : (dark ? const Color(0xFF8BF0BD) : const Color(0xFF125435));
-    return AppHover(
-      lift: true,
-      radius: 24,
+        ? const Color(0xFF491D2A)
+        : const Color(0xFF073C2C);
+    const foreground = Color(0xFFF0FFF7);
+    return AppButton(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      onPressed: onTap,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        width: double.infinity,
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(AppRadii.card),
           border: Border.all(color: foreground.withValues(alpha: .12)),
+          boxShadow: [
+            BoxShadow(
+              color: background.withValues(alpha: .18),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
           gradient: reduced
               ? null
-              : LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+              : RadialGradient(
+                  center: const Alignment(.8, -.9),
+                  radius: 1.8,
                   colors: [
-                    background,
                     negative
-                        ? (dark
-                              ? const Color(0xFF341A1F)
-                              : const Color(0xFFFDF4F5))
-                        : (dark
-                              ? const Color(0xFF112C22)
-                              : const Color(0xFFF0F8F3)),
+                        ? const Color(0xFF713246)
+                        : const Color(0xFF17664B),
+                    background,
                   ],
                 ),
         ),
@@ -770,11 +778,11 @@ class _BalanceHero extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 28),
             AnimatedMoney(
               cents: report.totals.balance,
               style: TextStyle(
-                fontSize: 38,
+                fontSize: MediaQuery.sizeOf(context).width >= 1000 ? 52 : 38,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -1.3,
                 color: foreground,
@@ -786,13 +794,37 @@ class _BalanceHero extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: foreground),
             ),
             const SizedBox(height: 6),
-            Text(
-              'O movimento do seu caixa, com clareza.',
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.4,
-                color: foreground.withValues(alpha: 0.85),
-              ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: foreground.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    negative
+                        ? 'Saídas acima das entradas'
+                        : 'Seu caixa neste período',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: foreground,
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Ver movimentações ›',
+                  style: TextStyle(fontSize: 12, color: foreground),
+                ),
+              ],
             ),
           ],
         ),

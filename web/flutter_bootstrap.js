@@ -25,6 +25,9 @@
   }, {once: true});
 
   _flutter.loader.load({
+    // Keep renderer files on the app's origin, including under a base path.
+    // Privacy filters or an unavailable CDN must not prevent the first frame.
+    config: {canvasKitBaseUrl: new URL('canvaskit/', document.baseURI).href},
     onEntrypointLoaded: async (engineInitializer) => {
       try {
         const appRunner = await engineInitializer.initializeEngine();

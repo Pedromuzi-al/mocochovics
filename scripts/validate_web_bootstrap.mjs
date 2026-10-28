@@ -9,12 +9,14 @@ async function boot({failLoad = false, failEngine = false} = {}) {
   const nodes = Object.fromEntries(['app-startup', 'startup-message', 'startup-retry']
     .map(id => [id, {hidden: id === 'startup-retry', textContent: '', addEventListener() {}}]));
   const listeners = new Map();
-  let timer, ran = false;
+  let timer, ran = false, loaderConfig;
   vm.runInNewContext(source, {
-    document: {getElementById: id => nodes[id]},
+    document: {baseURI: 'http://localhost:3000/bar/', getElementById: id => nodes[id]},
+    URL,
     window: {addEventListener: (event, callback) => listeners.set(event, callback), location: {reload() {}}},
     console: {error() {}}, setTimeout: callback => { timer = callback; return 1; }, clearTimeout() {},
     _flutter: {loader: {load: async options => {
+      loaderConfig = options.config;
       if (failLoad) throw new Error('Network unavailable');
       await options.onEntrypointLoaded({initializeEngine: async () => {
         if (failEngine) throw new Error('Renderer unavailable');
@@ -23,11 +25,12 @@ async function boot({failLoad = false, failEngine = false} = {}) {
     }}},
   });
   await new Promise(resolve => setImmediate(resolve));
-  return {nodes, listeners, timeout: () => timer(), ran};
+  return {nodes, listeners, timeout: () => timer(), ran, loaderConfig};
 }
 
 const successful = await boot();
 assert(successful.ran);
+assert.equal(successful.loaderConfig.canvasKitBaseUrl, 'http://localhost:3000/bar/canvaskit/');
 assert.equal(successful.nodes['app-startup'].hidden, false);
 successful.listeners.get('flutter-first-frame')();
 assert.equal(successful.nodes['app-startup'].hidden, true);

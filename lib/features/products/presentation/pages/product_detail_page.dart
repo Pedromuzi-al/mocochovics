@@ -17,6 +17,7 @@ import '../../../transactions/data/finance_repository.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../domain/product_financials.dart';
 import 'products_page.dart';
+import '../widgets/product_identity.dart';
 
 class ProductDetailPage extends ConsumerWidget {
   const ProductDetailPage({required this.id, super.key});
@@ -86,14 +87,7 @@ class ProductDetailPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                product['name'],
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                ),
-              ),
+              ProductIdentity(id: id, name: product['name'], detail: true),
               const SizedBox(height: 6),
               Text(
                 product['category'],

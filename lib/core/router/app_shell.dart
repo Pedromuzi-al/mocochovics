@@ -1,6 +1,8 @@
 import '../widgets/app_interaction.dart';
 
 import '../widgets/app_navigation_menu.dart';
+import '../widgets/floating_navigation.dart';
+import '../widgets/appearance_controls.dart';
 import '../theme/design_tokens.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -24,6 +26,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   bool _showingSessionError = false;
   bool _collapsed = false;
   bool _menuOpen = false;
+  bool _compactNavigation = false;
 
   @override
   void initState() {
@@ -74,6 +77,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _select(int index) {
+    if (index == widget.navigationShell.currentIndex) return;
+    setState(() => _compactNavigation = false);
     HapticFeedback.selectionClick();
     widget.navigationShell.goBranch(
       index,
@@ -228,6 +233,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           ),
                         ),
                       ),
+                      const AppearanceButton(),
                     ],
                   ),
                 ),
@@ -238,7 +244,66 @@ class _AppShellState extends ConsumerState<AppShell> {
                 data: MediaQuery.of(context).copyWith(
                   padding: MediaQuery.paddingOf(context).copyWith(top: 0),
                 ),
-                child: widget.navigationShell,
+                child: NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (notification) {
+                    if (notification.depth != 0 ||
+                        notification.dragDetails == null ||
+                        MediaQuery.accessibleNavigationOf(context) ||
+                        MediaQuery.disableAnimationsOf(context)) {
+                      return false;
+                    }
+                    final delta = notification.scrollDelta ?? 0;
+                    final compact =
+                        delta > 4 && notification.metrics.pixels > 80
+                        ? true
+                        : delta < -4
+                        ? false
+                        : _compactNavigation;
+                    if (compact != _compactNavigation) {
+                      setState(() => _compactNavigation = compact);
+                    }
+                    return false;
+                  },
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.viewInsetsOf(context).bottom > 0
+                                ? 0
+                                : MediaQuery.textScalerOf(context).scale(11) >
+                                      16
+                                ? 118
+                                : 100,
+                          ),
+                          child: widget.navigationShell,
+                        ),
+                      ),
+                      if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          bottom: 12,
+                          child: SafeArea(
+                            top: false,
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 480,
+                                ),
+                                child: FloatingNavigation(
+                                  currentIndex:
+                                      widget.navigationShell.currentIndex,
+                                  onSelect: _select,
+                                  compact: _compactNavigation,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],

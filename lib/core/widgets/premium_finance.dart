@@ -53,6 +53,17 @@ class PremiumSurface extends StatelessWidget {
               .resolveFrom(context)
               .withValues(alpha: 0.12),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(
+              alpha: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                  ? .08
+                  : .025,
+            ),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: child,
     ),

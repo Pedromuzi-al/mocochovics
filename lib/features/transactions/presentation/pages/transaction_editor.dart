@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../../../core/utils/financial_math.dart';
 import '../../../../core/widgets/finance_widgets.dart';
+import '../../../../core/widgets/operation_feedback.dart';
 import '../../data/finance_repository.dart';
 import '../../domain/statement_filter.dart';
 
@@ -104,11 +105,14 @@ Future<void> editTransaction(
   FinanceSnapshot snapshot, [
   DataRow? entry,
 ]) async {
-  final saved = await openFinancePage<bool>(
+  final saved = await openFinanceSheet<bool>(
     context,
     TransactionEditor(snapshot: snapshot, initial: entry),
   );
-  if (saved == true) ref.invalidate(financeSnapshotProvider);
+  if (saved == true) {
+    ref.invalidate(financeSnapshotProvider);
+    if (context.mounted) OperationFeedback.show(context, 'Lançamento salvo');
+  }
 }
 
 class TransactionEditor extends ConsumerStatefulWidget {
@@ -166,6 +170,8 @@ class _TransactionEditorState extends ConsumerState<TransactionEditor> {
         values['type'] == 'saida' &&
         values['status'] == 'pago';
     return RecordEditor(
+      hasExternalChanges: _receipt != null || _removeReceipt,
+      externalBusy: _picking,
       title: widget.initial == null ? 'Novo lançamento' : 'Editar lançamento',
       initial: widget.initial,
       fields: [
