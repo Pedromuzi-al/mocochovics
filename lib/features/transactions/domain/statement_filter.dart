@@ -15,6 +15,37 @@ class StatementFilter {
     this.search = '',
   });
 
+  factory StatementFilter.fromQueryParameters(Map<String, String> query) =>
+      StatementFilter(
+        start: _queryDate(query['start']),
+        end: _queryDate(query['end']),
+        type: query['type'],
+        categoryId: query['category_id'],
+        supplierId: query['supplier_id'],
+        suppliersOnly: query['suppliers_only'] == 'true',
+        paymentMethod: query['payment_method'],
+        status: query['status'],
+        search: query['search'] ?? '',
+      );
+
+  static DateTime? _queryDate(String? value) {
+    if (value == null) return null;
+    final date = DateTime.tryParse(value);
+    return date != null && FinancialMath.date(date) == value ? date : null;
+  }
+
+  Map<String, String> toQueryParameters() => {
+    if (start != null) 'start': FinancialMath.date(start!),
+    if (end != null) 'end': FinancialMath.date(end!),
+    'type': ?type,
+    'category_id': ?categoryId,
+    'supplier_id': ?supplierId,
+    if (suppliersOnly) 'suppliers_only': 'true',
+    'payment_method': ?paymentMethod,
+    'status': ?status,
+    if (search.isNotEmpty) 'search': search,
+  };
+
   final DateTime? start;
   final DateTime? end;
   final String? type;

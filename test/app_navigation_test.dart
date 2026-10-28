@@ -17,6 +17,8 @@ import 'package:mocochovisk/features/dashboard/presentation/pages/dashboard_page
 import 'package:mocochovisk/features/ingredients/presentation/pages/ingredients_page.dart';
 import 'package:mocochovisk/features/settings/presentation/pages/about_page.dart';
 import 'package:mocochovisk/features/settings/presentation/pages/settings_page.dart';
+import 'package:mocochovisk/features/statement/presentation/pages/statement_page.dart';
+import 'package:mocochovisk/core/widgets/finance_widgets.dart';
 
 import 'features/auth/fake_auth_repository.dart';
 import 'features/transactions/fake_finance_repository.dart';
@@ -77,6 +79,162 @@ double _contrast(Color first, Color second) {
 }
 
 void main() {
+  testWidgets(
+    'statement shortcuts reapply filters and their URLs restore the same selection',
+    (tester) async {
+      final app = await _pumpApp(tester);
+      Future<void> openIncome() async {
+        await tester.ensureVisible(find.text('Ver entradas ›'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ver entradas ›'));
+        await tester.pumpAndSettle();
+      }
+
+      await openIncome();
+      final uri = app.router.routeInformationProvider.value.uri;
+      expect(uri.path, '/extrato');
+      expect(uri.queryParameters['type'], 'entrada');
+      expect(uri.queryParameters['status'], 'pago');
+      expect(uri.queryParameters, containsPair('start', isNotEmpty));
+      expect(uri.queryParameters, containsPair('end', isNotEmpty));
+      await tester.tap(find.text('Limpar filtros').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Tipo: Entrada'), findsNothing);
+      await _tapTab(tester, 'Início');
+      await openIncome();
+      expect(find.text('Tipo: Entrada'), findsOneWidget);
+      expect(find.text('Status: Pago'), findsOneWidget);
+      await tester.enterText(find.byType(CupertinoSearchTextField), 'energia');
+      await tester.pumpAndSettle();
+      await _tapTab(tester, 'Início');
+      await _tapTab(tester, 'Extrato');
+      expect(
+        tester
+            .widget<CupertinoSearchTextField>(
+              find.byType(CupertinoSearchTextField),
+            )
+            .controller!
+            .text,
+        'energia',
+      );
+      app.router.go(uri.toString());
+      await tester.pumpAndSettle();
+      expect(find.text('Tipo: Entrada'), findsOneWidget);
+      expect(find.text('Status: Pago'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Home clears a detail on reselection and when returning from another tab',
+    (tester) async {
+      await _pumpApp(tester);
+      for (final leaveFirst in [false, true]) {
+        openFinancePage<void>(
+          tester.element(find.byType(DashboardPage)),
+          const StatementPage(),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(StatementPage), findsOneWidget);
+        if (leaveFirst) await _tapTab(tester, 'Extrato');
+        await _tapTab(tester, 'Início');
+        expect(find.byType(DashboardPage), findsOneWidget);
+        expect(find.byType(StatementPage), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final viewport in [const Size(1440, 1000), const Size(390, 844)]) {
+    testWidgets(
+      'statement shortcut selects its tab and Home returns to dashboard at ${viewport.width}',
+      (tester) async {
+        tester.view.physicalSize = viewport;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final app = await _pumpApp(tester);
+        await tester.ensureVisible(find.text('Ver extrato'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ver extrato'));
+        await tester.pumpAndSettle();
+        expect(app.router.routeInformationProvider.value.uri.path, '/extrato');
+        expect(find.byType(StatementPage), findsOneWidget);
+        if (viewport.width >= 1000) {
+          expect(
+            tester
+                .widget<AppNavigationMenu>(find.byType(AppNavigationMenu))
+                .currentIndex,
+            1,
+          );
+        } else {
+          expect(
+            tester
+                .widget<FloatingNavigation>(find.byType(FloatingNavigation))
+                .currentIndex,
+            1,
+          );
+        }
+        for (var cycle = 0; cycle < 2; cycle++) {
+          await _tapTab(tester, 'Início');
+          expect(app.router.routeInformationProvider.value.uri.path, '/inicio');
+          expect(find.byType(DashboardPage), findsOneWidget);
+          expect(find.byType(StatementPage), findsNothing);
+          await _tapTab(tester, 'Extrato');
+          expect(
+            app.router.routeInformationProvider.value.uri.path,
+            '/extrato',
+          );
+          expect(find.byType(StatementPage), findsOneWidget);
+          expect(find.byType(DashboardPage), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('desktop details can go back and return directly to the panel', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final app = await _pumpApp(tester);
+    for (final directlyToPanel in [false, true]) {
+      openFinancePage<void>(
+        tester.element(find.byType(DashboardPage)),
+        const StatementPage(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(StatementPage), findsOneWidget);
+      expect(find.bySemanticsLabel('Voltar ao painel'), findsOneWidget);
+      expect(find.byType(CupertinoNavigationBarBackButton), findsOneWidget);
+      if (directlyToPanel) {
+        await tester.tap(find.bySemanticsLabel('Voltar ao painel'));
+      } else {
+        await tester.tap(find.byType(CupertinoNavigationBarBackButton));
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(StatementPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(app.router.routeInformationProvider.value.uri.path, '/inicio');
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('mobile root pages offer a direct shortcut to the panel', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester);
+    await _tapTab(tester, 'Extrato');
+    await tester.tap(find.bySemanticsLabel('Voltar ao painel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DashboardPage), findsOneWidget);
+    expect(app.router.routeInformationProvider.value.uri.path, '/inicio');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'floating navigation preserves a tab search when changing branches',
     (tester) async {

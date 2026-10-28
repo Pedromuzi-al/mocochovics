@@ -17,6 +17,7 @@ import '../../features/settings/presentation/pages/about_page.dart';
 import '../../features/settings/presentation/pages/cost_settings_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/statement/presentation/pages/statement_page.dart';
+import '../../features/transactions/domain/statement_filter.dart';
 import '../../features/suppliers/presentation/pages/suppliers_page.dart';
 import '../../features/transactions/presentation/pages/categories_page.dart';
 import '../../features/transactions/presentation/pages/recurring_page.dart';
@@ -48,7 +49,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [_route('/inicio', const DashboardPage())],
           ),
           StatefulShellBranch(
-            routes: [_route('/extrato', const StatementPage())],
+            routes: [
+              GoRoute(
+                path: '/extrato',
+                pageBuilder: (context, state) => CupertinoPage<void>(
+                  key: state.pageKey,
+                  child: StatementPage(
+                    key: ValueKey((state.uri.toString(), state.extra)),
+                    initialFilter: StatementFilter.fromQueryParameters(
+                      state.uri.queryParameters,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           StatefulShellBranch(
             routes: [_route('/produtos', const ProductsPage())],

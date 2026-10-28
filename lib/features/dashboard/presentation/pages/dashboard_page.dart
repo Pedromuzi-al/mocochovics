@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/router/statement_navigation.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/utils/br_formatters.dart';
@@ -17,7 +18,6 @@ import '../../../products/domain/product_financials.dart';
 import '../../../products/presentation/pages/product_detail_page.dart';
 import '../../../products/presentation/pages/products_page.dart';
 import '../../../settings/presentation/pages/cost_settings_page.dart';
-import '../../../statement/presentation/pages/statement_page.dart';
 import '../../../suppliers/presentation/pages/suppliers_page.dart';
 import '../../../transactions/data/finance_repository.dart';
 import '../../../transactions/domain/statement_filter.dart';
@@ -53,16 +53,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     String? status,
     bool suppliersOnly = false,
   }) {
-    openFinancePage<void>(
+    openStatement(
       context,
-      StatementPage(
-        initialFilter: StatementFilter(
-          start: _range.start,
-          end: _range.end,
-          type: type,
-          status: status,
-          suppliersOnly: suppliersOnly,
-        ),
+      StatementFilter(
+        start: _range.start,
+        end: _range.end,
+        type: type,
+        status: status,
+        suppliersOnly: suppliersOnly,
       ),
     );
   }
@@ -120,6 +118,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) => FinanceBody(
     title: 'Início',
+    isDashboard: true,
     maxContentWidth: AppLayout.dashboardWidth,
     trailing: Row(
       mainAxisSize: MainAxisSize.min,

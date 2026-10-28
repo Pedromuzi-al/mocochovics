@@ -77,12 +77,16 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _select(int index) {
-    if (index == widget.navigationShell.currentIndex) return;
+    final reselecting = index == widget.navigationShell.currentIndex;
+    if (index == 0 || reselecting) {
+      widget.navigationShell.route.branches[index].navigatorKey.currentState
+          ?.popUntil((route) => route.isFirst);
+    }
     setState(() => _compactNavigation = false);
     HapticFeedback.selectionClick();
     widget.navigationShell.goBranch(
       index,
-      initialLocation: index == widget.navigationShell.currentIndex,
+      initialLocation: index == 0 || reselecting,
     );
   }
 

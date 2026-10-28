@@ -11,7 +11,7 @@ import '../../../../core/widgets/finance_widgets.dart';
 import '../../../../core/widgets/finance_search_field.dart';
 import '../../../../core/widgets/liquid_glass.dart';
 import '../../../../core/widgets/premium_finance.dart';
-import '../../../statement/presentation/pages/statement_page.dart';
+import '../../../../core/router/statement_navigation.dart';
 import '../../../transactions/domain/statement_filter.dart';
 import '../../../ingredients/domain/price_history.dart';
 
@@ -350,16 +350,14 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                       'Saídas pagas vinculadas a este fornecedor',
                     ),
                     trailing: const CupertinoListTileChevron(),
-                    onTap: () => openFinancePage<void>(
+                    onTap: () => openStatement(
                       context,
-                      StatementPage(
-                        initialFilter: StatementFilter(
-                          start: _start,
-                          end: DateTime(_end.year, _end.month, _end.day),
-                          supplierId: widget.id,
-                          type: 'saida',
-                          status: 'pago',
-                        ),
+                      StatementFilter(
+                        start: _start,
+                        end: DateTime(_end.year, _end.month, _end.day),
+                        supplierId: widget.id,
+                        type: 'saida',
+                        status: 'pago',
                       ),
                     ),
                   ),

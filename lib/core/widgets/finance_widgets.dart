@@ -119,9 +119,11 @@ class FinanceBody extends ConsumerWidget {
     required this.builder,
     this.trailing,
     this.maxContentWidth = AppLayout.contentWidth,
+    this.isDashboard = false,
     super.key,
   });
   final double maxContentWidth;
+  final bool isDashboard;
   final String title;
   final Widget? trailing;
   final List<Widget> Function(FinanceSnapshot snapshot) builder;
@@ -129,6 +131,7 @@ class FinanceBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(financeSnapshotProvider);
     return FeatureScaffold(
+      isDashboard: isDashboard,
       title: title,
       trailing: trailing,
       maxContentWidth: maxContentWidth,

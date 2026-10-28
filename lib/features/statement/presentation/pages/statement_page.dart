@@ -381,6 +381,7 @@ class _StatementSummary extends StatelessWidget {
           ? 4
           : 2;
       final width = (constraints.maxWidth - 12 * (columns - 1)) / columns;
+      const cardRadius = 16.0;
       final metrics = [
         (
           label: 'Entradas pagas',
@@ -414,13 +415,13 @@ class _StatementSummary extends StatelessWidget {
               width: width,
               child: AppHover(
                 lift: true,
-                radius: 24,
+                radius: cardRadius,
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: CupertinoColors.secondarySystemGroupedBackground
                         .resolveFrom(context),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(cardRadius),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

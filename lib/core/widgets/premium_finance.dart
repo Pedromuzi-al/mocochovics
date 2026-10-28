@@ -40,7 +40,7 @@ class PremiumSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppHover(
     lift: true,
-    radius: 24,
+    radius: AppRadii.card,
     child: Container(
       padding: padding,
       decoration: BoxDecoration(
